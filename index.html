@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard รายรับ — โรงพยาบาลท่ากระดาน</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #f4f6fb;
+  --bg2:      #eef1f8;
+  --card:     #ffffff;
+  --border:   #e2e8f3;
+  --shadow:   0 2px 16px rgba(100,120,180,.08);
+  --shadow2:  0 4px 24px rgba(100,120,180,.13);
+
+  /* pastel palette */
+  --p-blue:   #7eb8f7;
+  --p-mint:   #6dd9c0;
+  --p-lav:    #b39ddb;
+  --p-peach:  #ffb38a;
+  --p-rose:   #f48fb1;
+  --p-sky:    #80d8f7;
+  --p-yellow: #ffe082;
+  --p-green:  #a5d6a7;
+
+  --text:     #3a4468;
+  --muted:    #8a96b8;
+  --label:    #6473a8;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Sarabun', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: linear-gradient(135deg, #dce8ff 0%, #e8d5f5 50%, #d5f0ec 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 28px 40px 26px;
+  position: relative;
+  overflow: hidden;
+}
+header::before {
+  content:'';
+  position:absolute; inset:0;
+  background: radial-gradient(ellipse 50% 120% at 90% 50%, rgba(179,157,219,.2) 0%, transparent 70%);
+  pointer-events:none;
+}
+.h-chip {
+  display: inline-block;
+  background: rgba(126,184,247,.25);
+  border: 1px solid rgba(126,184,247,.5);
+  color: #4a78c4;
+  font-size: 10px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 3px 12px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.h-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #2a3560;
+  line-height: 1.3;
+}
+.h-sub { font-size: 13px; color: var(--label); margin-top: 4px; }
+.h-right {
+  position: absolute;
+  right: 40px; top: 50%;
+  transform: translateY(-50%);
+  text-align: right;
+}
+.h-year {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 1px;
+}
+.h-badge {
+  margin-top: 6px;
+  background: rgba(109,217,192,.2);
+  border: 1px solid rgba(109,217,192,.5);
+  color: #2a7a65;
+  font-size: 11px;
+  padding: 3px 12px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+/* ── Layout ── */
+.page { padding: 28px 40px 40px; display: grid; gap: 24px; }
+
+/* ── Section title ── */
+.sec-title {
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sec-title::after {
+  content:'';
+  flex:1;
+  height:1px;
+  background: var(--border);
+}
+
+/* ── KPI Row ── */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 14px;
+}
+.kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px 16px;
+  box-shadow: var(--shadow);
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
+}
+.kpi:hover { transform: translateY(-3px); box-shadow: var(--shadow2); }
+.kpi-stripe {
+  position: absolute;
+  top:0; left:0; right:0;
+  height: 4px;
+  border-radius: 14px 14px 0 0;
+}
+.kpi-yr {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+  margin-top: 2px;
+}
+.kpi-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text);
+}
+.kpi-unit { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.kpi-delta {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.up   { color: #43a085; }
+.down { color: #d05a6e; }
+.flat { color: var(--muted); }
+
+/* ── Card ── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 18px;
+}
+.card-sub {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  margin-bottom: 4px;
+}
+
+/* ── Grids ── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+.g21 { display: grid; grid-template-columns: 1.5fr 1fr; gap: 20px; }
+.wide { grid-column: 1 / -1; }
+
+/* ── Fund monitor cards ── */
+.fund-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.fund-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  box-shadow: var(--shadow);
+  border-top: 4px solid transparent;
+  transition: transform .2s;
+  display: flex;
+  flex-direction: column;
+}
+.fund-card:hover { transform: translateY(-2px); }
+.fund-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+.fund-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+.fund-card-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.fund-card-sub {
+  font-size: 10.5px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+.fund-stats-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.fund-stat { flex: 1; }
+.fund-stat-label { font-size: 10px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 2px; }
+.fund-stat-val { font-family: 'DM Mono', monospace; font-size: 16px; font-weight: 500; }
+.fund-stat-small { font-size: 10px; color: var(--muted); }
+.fund-bar-wrap { height: 5px; background: #eef1f8; border-radius: 10px; overflow: hidden; margin-bottom: 12px; }
+.fund-bar-fill { height: 100%; border-radius: 10px; }
+.fund-spark-wrap {
+  position: relative;
+  width: 100%;
+  height: 80px;
+  flex-shrink: 0;
+}
+
+/* ── Table ── */
+.tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tbl th {
+  background: var(--bg2);
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 9px 14px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+.tbl th:first-child { text-align: left; }
+.tbl td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: #5a6490;
+}
+.tbl td:first-child {
+  text-align: left;
+  font-family: 'Sarabun', sans-serif;
+  font-size: 13px;
+  color: var(--text);
+}
+.tbl tr:hover td { background: rgba(126,184,247,.05); }
+.tbl tr.total td {
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(109,217,192,.07);
+  border-top: 2px solid rgba(109,217,192,.3);
+}
+
+/* ── Legend ── */
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Tabs ── */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 0 40px;
+  background: var(--card);
+  border-bottom: 2px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(100,120,180,.06);
+}
+.tab-btn {
+  padding: 14px 24px;
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+  margin-bottom: -2px;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--text); font-weight: 600; border-bottom-color: var(--p-blue); }
+.tab-page { display: none; }
+.tab-page.active { display: block; }
+
+/* ── Footer ── */
+footer {
+  padding: 16px 40px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  font-family: 'DM Mono', monospace;
+}
+
+@media (max-width: 1100px) {
+  .kpi-row { grid-template-columns: repeat(3,1fr); }
+  .g2,.g3,.g21,.fund-grid { grid-template-columns: 1fr; }
+  .wide { grid-column: 1; }
+  .h-right { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="h-chip">Financial Intelligence Dashboard</div>
+  <div class="h-title">โรงพยาบาลท่ากระดาน อำเภอศรีสวัสดิ์ จังหวัดกาญจนบุรี</div>
+  <div class="h-sub">รายงานรายรับประจำปี — สรุปผลการดำเนินงานด้านการเงิน</div>
+  <div class="h-right">
+    <div class="h-year">ปีงบประมาณ 2565 – 2569</div>
+    <div class="h-badge">ข้อมูล ณ ธ.ค. 2568</div>
+  </div>
+</header>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('finance',this)">💰 สถานะการเงิน</button>
+  <button class="tab-btn" onclick="switchTab('income',this)">📊 รายรับ</button>
+  <button class="tab-btn" onclick="switchTab('productivity',this)">📈 Productivity</button>
+  <button class="tab-btn" onclick="switchTab('expense',this)">💸 รายจ่าย</button>
+</div>
+
+<!-- Page 0: Finance (NEW FIRST TAB) -->
+<div id="tab-finance" class="tab-page active">
+<style>
+/* ── Finance theme ── */
+.fin-card {
+  background:#fff; border:1px solid #dce6f0; border-radius:16px;
+  padding:22px 24px; box-shadow:0 3px 16px rgba(59,130,246,.07);
+  transition:transform .2s;
+}
+.fin-card:hover { transform:translateY(-2px); }
+.fin-sub { font-family:'DM Mono',monospace; font-size:10px; letter-spacing:2px;
+  text-transform:uppercase; color:#3b82f6; margin-bottom:4px; }
+.fin-title { font-size:14px; font-weight:700; color:#1e293b; margin-bottom:16px; }
+.fin-g2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.fin-g3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+.fin-g4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.num-pos { color:#10b981; font-weight:700; }
+.num-neg { color:#ef4444; font-weight:700; }
+.up { background:#dcfce7; color:#166534; border-radius:12px; padding:2px 8px; font-size:11px; font-weight:600; }
+.down { background:#fee2e2; color:#991b1b; border-radius:12px; padding:2px 8px; font-size:11px; font-weight:600; }
+.neutral { background:#f1f5f9; color:#475569; border-radius:12px; padding:2px 8px; font-size:11px; }
+
+/* KPI Cards */
+.fin-kpi-row { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+.fin-kpi { background:#fff; border:1px solid #dce6f0; border-radius:14px;
+  padding:16px 18px; box-shadow:0 2px 10px rgba(59,130,246,.06);
+  position:relative; overflow:hidden; }
+.fin-kpi::before { content:''; position:absolute; top:0; left:0; right:0;
+  height:3px; border-radius:14px 14px 0 0; background:var(--stripe,#93c5fd); }
+.fin-kpi-label { font-size:10px; color:#64748b; font-family:'DM Mono',monospace;
+  letter-spacing:1px; margin-bottom:5px; margin-top:2px; }
+.fin-kpi-val { font-family:'DM Mono',monospace; font-size:19px; font-weight:600; color:#1e293b; }
+.fin-kpi-unit { font-size:10px; color:#94a3b8; margin-top:1px; }
+.fin-kpi-note { font-size:11px; margin-top:6px; }
+
+/* Alert */
+.fin-alert { border-radius:12px; padding:14px 20px; margin-bottom:16px;
+  font-size:13px; font-weight:600; display:flex; align-items:center; gap:10px; }
+.fin-alert.danger { background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; }
+.fin-alert.warning { background:#fef9c3; border:1px solid #fde047; color:#854d0e; }
+
+/* Ratio cards */
+.ratio-card { background:#fff; border:1px solid #dce6f0; border-radius:14px;
+  padding:18px 20px; box-shadow:0 2px 10px rgba(59,130,246,.05); }
+.ratio-val { font-family:'DM Mono',monospace; font-size:26px; font-weight:600; margin:6px 0 4px; }
+.ratio-bars { display:flex; align-items:flex-end; gap:3px; height:34px; margin-top:8px; }
+
+/* Finance table */
+.fin-tbl { width:100%; border-collapse:collapse; font-size:12px; }
+.fin-tbl th { background:#eff6ff; color:#3b82f6; font-size:10px; letter-spacing:1px;
+  text-transform:uppercase; padding:8px 12px; text-align:right;
+  border-bottom:1px solid #dce6f0; }
+.fin-tbl th:first-child { text-align:left; }
+.fin-tbl td { padding:8px 12px; border-bottom:1px solid rgba(59,130,246,.08);
+  text-align:right; color:#334155; font-family:'DM Mono',monospace; font-size:12px; }
+.fin-tbl td:first-child { text-align:left; font-family:'Sarabun',sans-serif;
+  font-size:13px; color:#1e293b; font-weight:500; }
+.fin-tbl tr:hover td { background:rgba(59,130,246,.03); }
+.fin-tbl .tr-total td { font-weight:700; color:#1e40af; background:#eff6ff;
+  border-top:2px solid #93c5fd; }
+</style>
+
+<div class="page">
+
+  <!-- Alert Banner -->
+  <div id="finAlertBanner"></div>
+
+  <!-- KPI -->
+  <div>
+    <div class="sec-title">เงินบำรุงคงเหลือ — รายปี</div>
+    <div class="fin-kpi-row" id="finKpiRow"></div>
+  </div>
+
+  <!-- เงินบำรุง vs หนี้สิน -->
+  <div class="fin-g2" style="margin-bottom:20px">
+    <div class="fin-card">
+      <div class="fin-sub">FUND vs LIABILITY</div>
+      <div class="fin-title">เงินบำรุง vs ภาระหนี้สิน (บาท)</div>
+      <div style="height:240px"><canvas id="finFundBar"></canvas></div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-sub">NET BALANCE TREND</div>
+      <div class="fin-title">เงินบำรุงสุทธิ (หลังหักหนี้สิน)</div>
+      <div style="height:240px"><canvas id="finNetLine"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Ratio Cards -->
+  <div>
+    <div class="sec-title">Financial Ratios</div>
+    <div class="fin-g4" id="finRatioCards" style="margin-bottom:16px"></div>
+  </div>
+
+  <!-- Ratio Trends -->
+  <div class="fin-g2" style="margin-bottom:20px">
+    <div class="fin-card">
+      <div class="fin-sub">RATIO TRENDS</div>
+      <div class="fin-title">แนวโน้ม Current / Quick / Cash Ratio</div>
+      <div style="height:220px"><canvas id="finRatioLine"></canvas></div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-sub">NET WORKING CAPITAL</div>
+      <div class="fin-title">Networking Capital (บาท)</div>
+      <div style="height:220px"><canvas id="finNwcBar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ลูกหนี้ Trend -->
+  <div class="fin-g2" style="margin-bottom:20px">
+    <div class="fin-card">
+      <div class="fin-sub">AR TREND</div>
+      <div class="fin-title">ลูกหนี้สะสมค่ารักษา — แนวโน้มรายปี</div>
+      <div style="height:220px"><canvas id="finArTrend"></canvas></div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-sub">AR BY FUND</div>
+      <div class="fin-title">ลูกหนี้ปัจจุบัน — แยกตามสิทธิ</div>
+      <div style="height:220px"><canvas id="finArDonut"></canvas></div>
+    </div>
+  </div>
+
+  <!-- AR / AP Horizontal Bar -->
+  <div class="fin-g2" style="margin-bottom:20px">
+    <div class="fin-card">
+      <div class="fin-sub">ACCOUNTS RECEIVABLE</div>
+      <div class="fin-title">ลูกหนี้ปัจจุบัน — รายรายการ</div>
+      <div style="height:320px"><canvas id="finArBar"></canvas></div>
+    </div>
+    <div class="fin-card">
+      <div class="fin-sub">ACCOUNTS PAYABLE</div>
+      <div class="fin-title">เจ้าหนี้ปัจจุบัน — รายรายการ</div>
+      <div style="height:320px"><canvas id="finApBar"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Summary Table -->
+  <div class="fin-card">
+    <div class="fin-sub">SUMMARY</div>
+    <div class="fin-title">ตารางสรุปสถานะการเงินทุกรายการ</div>
+    <div style="overflow-x:auto"><table class="fin-tbl" id="finSummaryTbl"></table></div>
+  </div>
+
+</div>
+</div><!-- end #tab-finance -->
+
+<!-- Page 1: Income -->
+<div id="tab-income" class="tab-page">
+
+<div class="page">
+
+  <!-- KPI -->
+  <div>
+    <div class="sec-title">ภาพรวมรายรับรวม</div>
+    <div class="kpi-row" id="kpiRow"></div>
+  </div>
+
+  <!-- Overview charts -->
+  <div class="g2">
+    <div class="card wide">
+      <div class="card-sub">OVERVIEW</div>
+      <div class="card-title">รายรับรวมทั้งสิ้น — เปรียบเทียบรายปี (ล้านบาท)</div>
+      <div style="height:240px"><canvas id="totalChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="g21">
+    <div class="card">
+      <div class="card-sub">CATEGORY TREND</div>
+      <div class="card-title">แนวโน้มรายรับ 3 หมวดหลัก</div>
+      <div style="height:220px"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-sub">PROPORTION</div>
+      <div class="card-title">สัดส่วนหมวดรายรับ ปี 68</div>
+      <div style="height:220px"><canvas id="pieChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Fund Monitor -->
+  <div>
+    <div class="sec-title">Monitor รายรับแยกตามกองทุน</div>
+    <div class="fund-grid" id="fundGrid"></div>
+  </div>
+
+  <!-- Fund detail charts -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-sub">FUND COMPARISON</div>
+      <div class="card-title">รายรับค่ารักษา — แยกตามกองทุน (ปี 65–68)</div>
+      <div style="height:240px"><canvas id="fundStackChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-sub">FUND SHARE</div>
+      <div class="card-title">สัดส่วนรายรับค่ารักษา ปี 68</div>
+      <div style="height:240px"><canvas id="fundPieChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Other income monitor -->
+  <div>
+    <div class="sec-title">Monitor รายได้อื่นๆ</div>
+    <div class="card">
+      <div class="card-sub">OTHER INCOME</div>
+      <div class="card-title">รายได้อื่นๆ — แนวโน้มรายหัวข้อ (ล้านบาท)</div>
+      <div style="height:260px"><canvas id="otherIncomeChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Support income -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-sub">SUPPORT INCOME</div>
+      <div class="card-title">รายได้สนับสนุน — เงินค่าเสื่อม/งบลงทุน และเงินสนับสนุน</div>
+      <div style="height:220px"><canvas id="supportChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-sub">SUMMARY TABLE</div>
+      <div class="card-title">ตารางสรุปรายรับ (ล้านบาท)</div>
+      <div style="overflow-x:auto">
+        <table class="tbl" id="summaryTable"></table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- end .page -->
+</div><!-- end #tab-income -->
+
+<!-- Page 2: Productivity -->
+<div id="tab-productivity" class="tab-page">
+<div class="page">
+
+  <!-- KPI Productivity -->
+  <div>
+    <div class="sec-title">ภาพรวม Productivity</div>
+    <div class="kpi-row" id="prodKpiRow"></div>
+  </div>
+
+  <!-- อัตราครองเตียง + admit -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-sub">BED OCCUPANCY</div>
+      <div class="card-title">อัตราครองเตียง (%)</div>
+      <div style="height:240px"><canvas id="bedChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-sub">ADMISSIONS</div>
+      <div class="card-title">ยอด Admit เฉลี่ยต่อเดือน (ราย)</div>
+      <div style="height:240px"><canvas id="admitChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Adj RW -->
+  <div class="card">
+    <div class="card-sub">CASE MIX</div>
+    <div class="card-title">Sum Adj RW รายปี</div>
+    <div style="height:240px"><canvas id="adjRwChart"></canvas></div>
+  </div>
+
+  <!-- รายได้ 3 แผนก -->
+  <div>
+    <div class="sec-title">รายได้แผนก</div>
+    <div class="g3">
+      <div class="card">
+        <div class="card-sub">DENTAL</div>
+        <div class="card-title">รายได้ทันตกรรม (บาท)</div>
+        <div style="height:200px"><canvas id="dentalChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-sub">THAI TRADITIONAL</div>
+        <div class="card-title">รายได้แผนไทย (บาท)</div>
+        <div style="height:200px"><canvas id="thaiChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-sub">PHYSICAL THERAPY</div>
+        <div class="card-title">รายได้กายภาพบำบัด (บาท)</div>
+        <div style="height:200px"><canvas id="physioChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- รายได้ 3 แผนก รวมกราฟเดียว -->
+  <div class="card">
+    <div class="card-sub">DEPARTMENT INCOME COMPARISON</div>
+    <div class="card-title">เปรียบเทียบรายได้แผนก — ทันตกรรม / แผนไทย / กายภาพ</div>
+    <div style="height:260px"><canvas id="deptCompareChart"></canvas></div>
+  </div>
+
+</div>
+</div><!-- end #tab-productivity -->
+
+</div><!-- end #tab-productivity -->
+
+<!-- Page 3: Expense (3 sub-tabs per skill template) -->
+<div id="tab-expense" class="tab-page">
+
+<style>
+/* ── Expense sub-tab styles ── */
+.exp-subtab-bar{display:flex;gap:4px;padding:16px 40px 0;background:var(--bg);}
+.exp-stab{padding:9px 20px;font-family:'Sarabun',sans-serif;font-size:12px;font-weight:600;
+  color:#9b7ee0;background:rgba(216,200,248,.25);border:1px solid rgba(155,126,224,.3);
+  border-radius:30px;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.exp-stab:hover{background:rgba(216,200,248,.5);}
+.exp-stab.active{background:#9b7ee0;color:#fff;border-color:#9b7ee0;}
+.exp-sec{display:none;padding:20px 40px 32px;}
+.exp-sec.active{display:block;}
+
+/* ── Expense card ── */
+.ec{background:#fff;border:1px solid #e8e0fc;border-radius:18px;padding:22px 24px;
+  box-shadow:0 3px 16px rgba(90,60,180,.06);transition:transform .2s;}
+.ec:hover{transform:translateY(-2px);}
+.ec-sub{font-family:'Sarabun',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+  color:#9b7ee0;margin-bottom:4px;}
+.ec-title{font-size:14px;font-weight:700;color:#3a2d6a;margin-bottom:16px;}
+
+/* ── Expense KPI ── */
+.exp-kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+.exp-kpi{background:#fff;border:1px solid #e8e0fc;border-radius:14px;padding:16px 18px;
+  box-shadow:0 2px 10px rgba(90,60,180,.05);position:relative;overflow:hidden;}
+.exp-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:14px 14px 0 0;}
+.exp-kpi-label{font-size:10px;color:#9b7ee0;font-family:'Sarabun',sans-serif;
+  letter-spacing:1px;margin-bottom:5px;margin-top:2px;}
+.exp-kpi-val{font-family:'Mitr',sans-serif;font-size:21px;font-weight:500;color:#3a2d6a;}
+.exp-kpi-unit{font-size:10px;color:#a08ab8;margin-top:1px;}
+.exp-kpi-note{font-size:11px;margin-top:6px;font-weight:600;}
+.cn{color:#dc3545;}.cp{color:#198754;}
+
+/* ── Cost-type summary cards ── */
+.cost-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.cost-card{border-radius:16px;padding:20px 22px;}
+.cost-card.fx{background:#e8e0fc;border:1px solid #c8b8f4;}
+.cost-card.vr{background:#d4f4e4;border:1px solid #a8e4c0;}
+.cost-card.it{background:#fde8c0;border:1px solid #f4c878;}
+.cost-card-title{font-size:14px;font-weight:700;margin-bottom:6px;}
+.cost-card.fx .cost-card-title{color:#5b3fbf;}
+.cost-card.vr .cost-card-title{color:#1a7a52;}
+.cost-card.it .cost-card-title{color:#9a5c00;}
+.cost-card-val{font-family:'Mitr',sans-serif;font-size:24px;font-weight:600;margin-bottom:4px;}
+.cost-card.fx .cost-card-val{color:#5b3fbf;}
+.cost-card.vr .cost-card-val{color:#1a7a52;}
+.cost-card.it .cost-card-val{color:#9a5c00;}
+.cost-card-sub{font-size:11px;color:#6a6090;line-height:1.5;}
+
+/* ── Invest box ── */
+.invest-box{background:linear-gradient(135deg,#f0eaff,#e8f4ff);border:1px solid #c8b8f4;
+  border-radius:18px;padding:22px 24px;margin-top:0;}
+.invest-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+.inv-kpi{background:#fff;border-radius:12px;padding:12px 14px;
+  box-shadow:0 2px 8px rgba(90,60,180,.06);}
+.inv-kpi-yr{font-size:10px;color:#9b7ee0;font-family:'Sarabun',sans-serif;letter-spacing:1px;margin-bottom:3px;}
+.inv-kpi-val{font-family:'Mitr',sans-serif;font-size:16px;font-weight:600;color:#5b3fbf;}
+.inv-kpi-unit{font-size:10px;color:#a08ab8;}
+
+/* ── Table ── */
+.exp-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.exp-tbl th{background:#f0eaff;color:#7e6fa0;font-size:10px;letter-spacing:1px;
+  text-transform:uppercase;padding:8px 12px;text-align:right;border-bottom:1px solid #e0d4f8;}
+.exp-tbl th:first-child,.exp-tbl th:nth-child(2){text-align:left;}
+.exp-tbl td{padding:7px 12px;border-bottom:1px solid rgba(180,160,240,.15);
+  text-align:right;color:#5a4a80;font-family:'Sarabun',sans-serif;}
+.exp-tbl td:first-child{text-align:left;color:#3a2d6a;font-weight:500;}
+.exp-tbl td:nth-child(2){text-align:left;font-size:11px;color:#9b7ee0;}
+.exp-tbl tr:hover td{background:rgba(216,200,248,.1);}
+.exp-tbl .nd{color:#c0b8d8;}
+.exp-tbl .tr-total td{font-weight:700;color:#3a2d6a;background:rgba(155,126,224,.08);
+  border-top:2px solid rgba(155,126,224,.3);}
+
+/* ── Grids ── */
+.eg2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.eg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.eg23{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+
+/* ── Section divider ── */
+.exp-sec-title{font-family:'Sarabun',sans-serif;font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;color:#9b7ee0;margin:20px 0 12px;
+  display:flex;align-items:center;gap:10px;}
+.exp-sec-title::after{content:'';flex:1;height:1px;background:#e0d4f8;}
+</style>
+
+<!-- Expense sub-tab buttons -->
+<div class="exp-subtab-bar">
+  <button class="exp-stab active" onclick="showExpTab(0,this)">📊 เปรียบเทียบรายหมวด</button>
+  <button class="exp-stab" onclick="showExpTab(1,this)">🔒 Fixed / Variable / Intermittent</button>
+  <button class="exp-stab" onclick="showExpTab(2,this)">📋 รายการมูลค่าสูง · แผนลด</button>
+</div>
+
+<!-- ── Sub-tab 1: Category comparison ── -->
+<div class="exp-sec active" id="exp-sec-0">
+
+  <div class="exp-kpi-row" id="expKpiRow"></div>
+
+  <div class="eg2" style="margin-bottom:16px">
+    <div class="ec">
+      <div class="ec-sub">OVERVIEW · ไม่รวมงบลงทุน</div>
+      <div class="ec-title">รายจ่ายสะสม 4 ปี แยกหมวด (ล้านบาท)</div>
+      <div style="height:240px"><canvas id="expStackedBar"></canvas></div>
+    </div>
+    <div class="ec">
+      <div class="ec-sub">TREND 5 ปี</div>
+      <div class="ec-title">แนวโน้มรายจ่ายดำเนินงาน vs รวม vs เป้าลด 3%/ปี</div>
+      <div style="height:240px"><canvas id="expTrendLine"></canvas></div>
+    </div>
+  </div>
+
+  <div class="exp-sec-title">รายจ่ายแยกหมวด</div>
+  <div class="eg3" style="margin-bottom:16px">
+    <div class="ec"><div class="ec-sub">บุคลากร</div><div class="ec-title" style="margin-bottom:10px">รายจ่ายบุคลากร</div><div style="height:160px"><canvas id="ec1"></canvas></div></div>
+    <div class="ec"><div class="ec-sub">ยา/เวชภัณฑ์</div><div class="ec-title" style="margin-bottom:10px">ค่ายาและเวชภัณฑ์</div><div style="height:160px"><canvas id="ec2"></canvas></div></div>
+    <div class="ec"><div class="ec-sub">ค่าใช้สอย</div><div class="ec-title" style="margin-bottom:10px">ค่าใช้สอยรวม</div><div style="height:160px"><canvas id="ec3"></canvas></div></div>
+    <div class="ec"><div class="ec-sub">สาธารณูปโภค</div><div class="ec-title" style="margin-bottom:10px">ค่าสาธารณูปโภค</div><div style="height:160px"><canvas id="ec4"></canvas></div></div>
+    <div class="ec"><div class="ec-sub">วัสดุทั่วไป</div><div class="ec-title" style="margin-bottom:10px">ค่าวัสดุทั่วไป</div><div style="height:160px"><canvas id="ec5"></canvas></div></div>
+    <div class="ec"><div class="ec-sub">แผนงาน/โอน</div><div class="ec-title" style="margin-bottom:10px">โครงการ + โอน รพ.สต.</div><div style="height:160px"><canvas id="ec6"></canvas></div></div>
+  </div>
+
+  <div class="exp-sec-title">รายละเอียดค่าใช้สอย / วัสดุทั่วไป</div>
+  <div class="eg2" style="margin-bottom:16px">
+    <div class="ec">
+      <div class="ec-sub">ค่าใช้สอย รายกลุ่ม</div>
+      <div class="ec-title">ค่าใช้สอย — ซ่อมแซม / IT / จ้างเหมา / ประกัน</div>
+      <div style="height:260px"><canvas id="expSvcHBar"></canvas></div>
+    </div>
+    <div class="ec">
+      <div class="ec-sub">วัสดุทั่วไป รายกลุ่ม</div>
+      <div class="ec-title">วัสดุทั่วไป — เชื้อเพลิง / สำนักงาน / งานบ้าน / ก่อสร้าง</div>
+      <div style="height:260px"><canvas id="expSupHBar"></canvas></div>
+    </div>
+  </div>
+
+  <div class="exp-sec-title">งบลงทุน + ค่าเสื่อมราคา + เงินบริจาค</div>
+  <div class="invest-box">
+    <div style="font-size:14px;font-weight:700;color:#5b3fbf;margin-bottom:14px">💼 งบลงทุน + ค่าเสื่อม + เงินบริจาค (แยกออกจากรายจ่ายดำเนินงาน)</div>
+    <div class="invest-kpi-grid" id="investKpiGrid"></div>
+    <div class="eg2">
+      <div style="height:200px"><canvas id="expInvestBar"></canvas></div>
+      <div style="overflow-x:auto"><table class="exp-tbl" id="investTbl"></table></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Sub-tab 2: Fixed/Variable/Intermittent ── -->
+<div class="exp-sec" id="exp-sec-1">
+
+  <div class="cost-cards" id="costCards"></div>
+
+  <div class="eg23" style="margin-bottom:16px">
+    <div class="ec">
+      <div class="ec-sub">GROUPED BAR</div>
+      <div class="ec-title">เปรียบเทียบ 3 ประเภทรายจ่าย × 4 ปี (ล้านบาท)</div>
+      <div style="height:260px"><canvas id="fviGroupBar"></canvas></div>
+    </div>
+    <div class="ec">
+      <div class="ec-sub">สัดส่วน ปี 68</div>
+      <div class="ec-title">สัดส่วน Fixed / Variable / Intermittent</div>
+      <div style="height:260px"><canvas id="fviDonut"></canvas></div>
+    </div>
+  </div>
+
+  <div class="eg3" style="margin-bottom:16px">
+    <div class="ec">
+      <div class="ec-sub">FIXED COST TREND</div>
+      <div class="ec-title">Fixed Cost — เปรียบเทียบรายปี</div>
+      <div style="height:200px"><canvas id="fviFixTrend"></canvas></div>
+    </div>
+    <div class="ec">
+      <div class="ec-sub">VARIABLE COST TREND</div>
+      <div class="ec-title">Variable Cost — เปรียบเทียบรายปี</div>
+      <div style="height:200px"><canvas id="fviVarTrend"></canvas></div>
+    </div>
+    <div class="ec">
+      <div class="ec-sub">INTERMITTENT COST TREND</div>
+      <div class="ec-title">Intermittent Cost — เปรียบเทียบรายปี</div>
+      <div style="height:200px"><canvas id="fviIntTrend"></canvas></div>
+    </div>
+  </div>
+
+  <div class="exp-sec-title">Top 5 รายการมูลค่าสูงสุด — Fixed Cost</div>
+  <div class="ec" style="margin-bottom:16px">
+    <div class="ec-sub">FIXED COST · TOP ITEMS</div>
+    <div class="ec-title">รายการ Fixed Cost สูงสุด 5 อันดับ — เปรียบเทียบรายปี</div>
+    <div style="height:260px"><canvas id="topFixHBar"></canvas></div>
+  </div>
+
+  <div class="exp-sec-title">Top 5 รายการมูลค่าสูงสุด — Variable Cost</div>
+  <div class="ec" style="margin-bottom:16px">
+    <div class="ec-sub">VARIABLE COST · TOP ITEMS</div>
+    <div class="ec-title">รายการ Variable Cost สูงสุด 5 อันดับ — เปรียบเทียบรายปี</div>
+    <div style="height:260px"><canvas id="topVarHBar"></canvas></div>
+  </div>
+
+  <div class="exp-sec-title">Top 5 รายการมูลค่าสูงสุด — Intermittent Cost</div>
+  <div class="ec" style="margin-bottom:16px">
+    <div class="ec-sub">INTERMITTENT COST · TOP ITEMS</div>
+    <div class="ec-title">รายการ Intermittent Cost สูงสุด 5 อันดับ — เปรียบเทียบรายปี</div>
+    <div style="height:260px"><canvas id="topIntHBar"></canvas></div>
+  </div>
+
+  <div class="exp-sec-title">ตาราง Fixed Cost</div>
+  <div class="ec" style="margin-bottom:16px"><table class="exp-tbl" id="tblFixed"></table></div>
+
+  <div class="exp-sec-title">ตาราง Variable Cost</div>
+  <div class="ec" style="margin-bottom:16px"><table class="exp-tbl" id="tblVariable"></table></div>
+
+  <div class="exp-sec-title">ตาราง Intermittent Cost</div>
+  <div class="ec"><table class="exp-tbl" id="tblIntermittent"></table></div>
+
+</div>
+
+<!-- ── Sub-tab 3: Top items + Plan ── -->
+<div class="exp-sec" id="exp-sec-2">
+
+  <div class="eg2" style="margin-bottom:16px">
+    <div class="ec">
+      <div class="ec-sub">TOP 10</div>
+      <div class="ec-title">10 รายการมูลค่าสูงสุด ปี 68 (ไม่รวมงบลงทุน)</div>
+      <div style="height:300px"><canvas id="top10Bar"></canvas></div>
+    </div>
+    <div class="ec">
+      <div class="ec-sub">เพิ่ม/ลด สูงสุด ปี 67→68</div>
+      <div class="ec-title">รายการที่เปลี่ยนแปลงมากที่สุด</div>
+      <div style="height:300px"><canvas id="changeBar"></canvas></div>
+    </div>
+  </div>
+
+  <div class="exp-sec-title">ตารางวิเคราะห์รายการ — ปี 67 vs 68 + แนวทางลด</div>
+  <div class="ec" style="margin-bottom:20px"><div style="overflow-x:auto"><table class="exp-tbl" id="tblAnalysis"></table></div></div>
+
+  <div class="exp-sec-title">6 แผนปฏิบัติการลดรายจ่าย</div>
+  <div class="eg3" id="actionPlans"></div>
+
+</div>
+
+</div><!-- end #tab-expense -->
+
+<footer>
+  <span>SOURCE: ข้อมูลการเงิน โรงพยาบาลท่ากระดาน</span>
+  <span>หน่วย: บาท | *ปี 69 = ต.ค.–ธ.ค. 68 (ไตรมาสแรก)</span>
+</footer>
+
+<script>
+// ════════════════════════════════════════
+//  RAW DATA (บาท → แปลงเป็นล้านบาทในโค้ด)
+// ════════════════════════════════════════
+const M = 1_000_000;
+const yr = ['ปี 65','ปี 66','ปี 67','ปี 68','ปี 69*'];
+const yr4 = ['ปี 65','ปี 66','ปี 67','ปี 68'];
+
+// กองทุน UC (รายรับค่ารักษา + ตามจ่าย)
+const uc_op   = [10781877.67, 13716557.53, 12360862.93, 4507215.31, 1306810.50];
+const uc_ip   = [2120877.12,  3662687.58,  3262617.07,  2356929.14, 1459839.47];
+const uc_cr   = [358671.59,   215803.54,   533740.94,   286952.50,  200071.06];
+const uc_pp   = [1422349.64,  597917.30,   733302.79,   490022.44,  633720.55];
+const uc_stat = [596607.26,   307672.72,   66446.04,    536071.34,  0];
+const uc_fol1 = [3655.00,     1580.00,     3895.00,     337293.86,  0];
+const uc_fol2 = [280148.08,   311236.43,   993488.71,   1066180.46, 107363.50];
+
+// เบิกตรง
+const gov_civil = [2132354.94, 3149452.39, 4026453.66, 3303286.03, 1403743.69];
+const gov_state = [282145.00,  44127.00,   104959.00,  77144.75,   7642.00];
+const gov_abt   = [154662.22,  206303.14,  350418.49,  648192.83,  381551.14];
+
+// ชำระเงินเอง
+const self_pay  = [1411446.00, 1466069.50, 1630536.75, 1566850.25, 452949.50];
+
+// ประกันสังคม
+const sso_main  = [780691.02,  1188257.11, 1708401.83, 1784846.62, 0];
+const sso_cov   = [589119.60,  905676.00,  0,          0,          0];
+const sso_comp  = [134614.60,  84181.00,   108547.00,  88100.00,   26577.00];
+
+// พรบ.รถ
+const prb       = [60949.00,   225348.00,  259003.00,  129792.00,  33819.00];
+
+// อื่นๆ (1.14 + ตามจ่ายแรงงานต่างด้าว + ดอกเบี้ย)
+const other_rx  = [11647568.20,4151253.43, 562564.00,  541513.00,  90552.00];
+const other_fol = [115967.26,  84001.06,   120704.99,  110843.55,  0];
+const interest  = [40444.06,   50315.87,   74637.16,   47456.73,   14094.09];
+
+// สนับสนุน
+const fund_tambon=[43500.00,   126612.00,  93975.00,   129340.00,  0];
+const donation  = [535010.00,  1423500.00, 632001.00,  178875.00,  312500.00];
+const deprec    = [2225672.61, 1573444.29, 2372730.03, 2720600.00, 0];
+const support   = [78420.00,   2055000.00, 1150000.00, 2934000.00, 0];
+
+// รวม
+const total     = [35796750.87,35546995.89,31149285.39,23841505.81,6431233.50];
+const treat_sum = [32473933.86,29921306.24,25707853.50,16316916.21,5997275.91];
+const follow_sum= [399770.34,  396817.49,  1118088.70, 1514317.87, 107363.50];
+const other_sum = [2923046.67, 5228872.16, 4323343.19, 6010271.73, 326594.09];
+
+const f = v => (v/M).toFixed(2);
+const sum = (...arrs) => arrs[0].map((_,i) => arrs.reduce((acc,a)=>acc+a[i],0));
+
+// Aggregate กองทุน
+const UC_total   = sum(uc_op,uc_ip,uc_cr,uc_pp,uc_stat,uc_fol1,uc_fol2).map(v=>v/M);
+const GOV_total  = sum(gov_civil,gov_state,gov_abt).map(v=>v/M);
+const SELF_total = self_pay.map(v=>v/M);
+const SSO_total  = sum(sso_main,sso_cov,sso_comp).map(v=>v/M);
+const PRB_total  = prb.map(v=>v/M);
+const OTHER_fund = sum(other_rx,other_fol,interest).map(v=>v/M);
+const SUP_total  = sum(fund_tambon,donation,deprec,support).map(v=>v/M);
+
+// ════════════════════════════════════════
+//  PASTEL COLORS
+// ════════════════════════════════════════
+const P = {
+  blue:   '#7eb8f7',
+  mint:   '#6dd9c0',
+  lav:    '#b39ddb',
+  peach:  '#ffb38a',
+  rose:   '#f48fb1',
+  sky:    '#80d8f7',
+  yellow: '#ffe082',
+  green:  '#a5d6a7',
+  grid:   '#e8ecf5',
+  text:   '#8a96b8',
+};
+
+Chart.defaults.color = P.text;
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 11;
+
+const rgba = (hex, a) => {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+};
+
+const baseOpts = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{ legend:{ position:'top', labels:{ boxWidth:10, padding:14, font:{size:11} } } },
+  scales:{
+    x:{ grid:{ color:P.grid }, ticks:{ color:P.text } },
+    y:{ grid:{ color:P.grid }, ticks:{ color:P.text, callback:v=>v+'M' } }
+  }
+};
+
+// ════════════════════════════════════════
+//  KPI CARDS
+// ════════════════════════════════════════
+const kpiColors = [P.blue, P.mint, P.lav, P.peach, P.rose];
+const kpiTotal  = total.map(v=>(v/M).toFixed(2));
+const kpiNote   = ['ฐาน','-0.7%','-12.4%','-23.5%','Q1 เท่านั้น'];
+const kpiDir    = ['flat','down','down','down','flat'];
+
+document.getElementById('kpiRow').innerHTML = yr.map((y,i)=>`
+  <div class="kpi">
+    <div class="kpi-stripe" style="background:${kpiColors[i]}"></div>
+    <div class="kpi-yr">${y}</div>
+    <div class="kpi-val">${kpiTotal[i]}</div>
+    <div class="kpi-unit">ล้านบาท</div>
+    <div class="kpi-delta">
+      <span class="${kpiDir[i]}">
+        ${kpiDir[i]==='down'?'▼':kpiDir[i]==='up'?'▲':'◆'} ${kpiNote[i]}
+      </span>
+    </div>
+  </div>`).join('');
+
+// ════════════════════════════════════════
+//  TOTAL CHART
+// ════════════════════════════════════════
+new Chart(document.getElementById('totalChart'),{
+  data:{
+    labels:yr,
+    datasets:[
+      { type:'bar', label:'รายรับค่ารักษา',   data:treat_sum.map(v=>+(v/M).toFixed(2)),
+        backgroundColor:rgba(P.blue,.55), borderRadius:6, stack:'s' },
+      { type:'bar', label:'รายได้ตามจ่าย',  data:follow_sum.map(v=>+(v/M).toFixed(2)),
+        backgroundColor:rgba(P.lav,.7), borderRadius:6, stack:'s' },
+      { type:'bar', label:'รายได้อื่นๆ',    data:other_sum.map(v=>+(v/M).toFixed(2)),
+        backgroundColor:rgba(P.yellow,.7), borderRadius:6, stack:'s' },
+      { type:'line', label:'รวมทั้งสิ้น',
+        data:total.map(v=>+(v/M).toFixed(2)),
+        borderColor:P.mint, backgroundColor:rgba(P.mint,.1),
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:P.mint,
+        tension:.35, fill:false, order:0 },
+    ]
+  },
+  options:{
+    ...baseOpts,
+    scales:{
+      x:{ stacked:true, grid:{color:P.grid} },
+      y:{ stacked:true, grid:{color:P.grid}, ticks:{callback:v=>v+'M'} }
+    },
+    plugins:{
+      ...baseOpts.plugins,
+      tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน` } }
+    }
+  }
+});
+
+// ════════════════════════════════════════
+//  TREND CHART
+// ════════════════════════════════════════
+new Chart(document.getElementById('trendChart'),{
+  type:'line',
+  data:{
+    labels:yr,
+    datasets:[
+      { label:'รายรับค่ารักษา', data:treat_sum.map(v=>+(v/M).toFixed(2)),
+        borderColor:P.blue, backgroundColor:rgba(P.blue,.12),
+        borderWidth:2.5, pointRadius:4, pointBackgroundColor:P.blue, tension:.35, fill:true },
+      { label:'รายได้อื่นๆ',    data:other_sum.map(v=>+(v/M).toFixed(2)),
+        borderColor:P.yellow, backgroundColor:rgba(P.yellow,.12),
+        borderWidth:2, pointRadius:4, pointBackgroundColor:P.yellow, tension:.35, fill:true },
+      { label:'รายได้ตามจ่าย',  data:follow_sum.map(v=>+(v/M).toFixed(2)),
+        borderColor:P.lav, backgroundColor:rgba(P.lav,.12),
+        borderWidth:2, pointRadius:4, pointBackgroundColor:P.lav, tension:.35, fill:true },
+    ]
+  },
+  options:{
+    ...baseOpts,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{
+      ...baseOpts.plugins,
+      tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน` } }
+    }
+  }
+});
+
+// ════════════════════════════════════════
+//  PIE ปี 68
+// ════════════════════════════════════════
+new Chart(document.getElementById('pieChart'),{
+  type:'doughnut',
+  data:{
+    labels:['รายรับค่ารักษา','รายได้ตามจ่าย','รายได้อื่นๆ'],
+    datasets:[{
+      data:[+(treat_sum[3]/M).toFixed(2), +(follow_sum[3]/M).toFixed(2), +(other_sum[3]/M).toFixed(2)],
+      backgroundColor:[P.blue, P.lav, P.yellow],
+      borderColor:'#fff', borderWidth:3, hoverOffset:6,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    cutout:'65%',
+    plugins:{
+      legend:{ position:'bottom', labels:{ boxWidth:10, padding:14 } },
+      tooltip:{ callbacks:{ label:c=>` ${c.label}: ${c.parsed.toFixed(2)} ล้าน` } }
+    }
+  }
+});
+
+// ════════════════════════════════════════
+//  FUND MONITOR CARDS + SPARKLINES
+// ════════════════════════════════════════
+const funds = [
+  { name:'UC (บัตรทอง)',        sub:'เหมาจ่าย + IP + CR + PP + กลุ่มเปราะบาง + ตามจ่าย',
+    data:UC_total, color:P.blue,   icon:'🏥' },
+  { name:'เบิกตรง',             sub:'ข้าราชการ + รัฐวิสาหกิจ + อปท.',
+    data:GOV_total, color:P.mint,  icon:'🏛️' },
+  { name:'ชำระเงินเอง',          sub:'ผู้ป่วยชำระด้วยตนเอง',
+    data:SELF_total, color:P.peach, icon:'💳' },
+  { name:'ประกันสังคม',          sub:'SSO + กองทุนทดแทน + โควิด',
+    data:SSO_total, color:P.lav,   icon:'🛡️' },
+  { name:'พรบ.รถ',               sub:'กองทุนประกันภัยรถยนต์',
+    data:PRB_total, color:P.rose,  icon:'🚗' },
+  { name:'รายได้อื่นๆ',          sub:'อื่นๆ + ตามจ่ายต่างด้าว + ดอกเบี้ย',
+    data:OTHER_fund, color:P.yellow, icon:'📋' },
+];
+
+const maxAll = Math.max(...funds.flatMap(f=>f.data.slice(0,4)));
+
+const fundGrid = document.getElementById('fundGrid');
+fundGrid.innerHTML = funds.map((fd,i)=>{
+  // คำนวณ % เปลี่ยนแปลง ปี68 vs ปี67
+  const chg = fd.data[2] > 0 ? ((fd.data[3]-fd.data[2])/fd.data[2]*100) : 0;
+  const chgTxt = chg >= 0 ? `▲ +${chg.toFixed(1)}%` : `▼ ${chg.toFixed(1)}%`;
+  const chgColor = chg >= 0 ? '#43a085' : '#d05a6e';
+  return `
+  <div class="fund-card" style="border-top-color:${fd.color}">
+    <div class="fund-card-header">
+      <div class="fund-card-title">${fd.name}</div>
+      <div class="fund-card-icon">${fd.icon}</div>
+    </div>
+    <div class="fund-card-sub">${fd.sub}</div>
+    <div class="fund-stats-row">
+      <div class="fund-stat">
+        <div class="fund-stat-label">ปี 68</div>
+        <div class="fund-stat-val" style="color:${fd.color}">${fd.data[3].toFixed(2)}</div>
+        <div class="fund-stat-small">ล้านบาท</div>
+      </div>
+      <div class="fund-stat">
+        <div class="fund-stat-label">เทียบปี 67</div>
+        <div class="fund-stat-val" style="color:${chgColor};font-size:14px">${chgTxt}</div>
+        <div class="fund-stat-small">จาก ${fd.data[2].toFixed(2)} ล้าน</div>
+      </div>
+    </div>
+    <div class="fund-bar-wrap">
+      <div class="fund-bar-fill" style="width:${Math.min(100,(fd.data[3]/maxAll*100)).toFixed(0)}%;background:${fd.color}"></div>
+    </div>
+    <div class="fund-spark-wrap">
+      <canvas id="spark${i}"></canvas>
+    </div>
+  </div>`;
+}).join('');
+
+// Draw sparklines — ต้องรอ DOM render ก่อน
+requestAnimationFrame(()=>{
+  funds.forEach((fd,i)=>{
+    const canvas = document.getElementById('spark'+i);
+    if (!canvas) return;
+    new Chart(canvas, {
+      type:'line',
+      data:{
+        labels: yr,
+        datasets:[{
+          data: fd.data,
+          borderColor: fd.color,
+          backgroundColor: rgba(fd.color,.15),
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: fd.color,
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1.5,
+          tension: .4,
+          fill: true,
+        }]
+      },
+      options:{
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 600 },
+        plugins:{
+          legend:{ display:false },
+          tooltip:{
+            callbacks:{
+              title: items => yr[items[0].dataIndex],
+              label: c => ` ${c.parsed.y.toFixed(2)} ล้านบาท`
+            }
+          }
+        },
+        scales:{
+          x:{
+            grid:{ display:false },
+            border:{ display:false },
+            ticks:{ font:{ size:9, family:"'DM Mono', monospace" }, color:P.text, maxRotation:0 }
+          },
+          y:{
+            grid:{ color:'rgba(200,210,230,.3)', drawBorder:false },
+            border:{ display:false },
+            ticks:{ font:{ size:9 }, color:P.text, maxTicksLimit:4, callback: v => v.toFixed(1) }
+          }
+        }
+      }
+    });
+  });
+});
+
+// ════════════════════════════════════════
+//  FUND STACKED BAR (ปี 65-68)
+// ════════════════════════════════════════
+new Chart(document.getElementById('fundStackChart'),{
+  type:'bar',
+  data:{
+    labels:yr4,
+    datasets:[
+      { label:'UC',          data:UC_total.slice(0,4).map(v=>+v.toFixed(2)),   backgroundColor:rgba(P.blue,.65), borderRadius:4 },
+      { label:'เบิกตรง',     data:GOV_total.slice(0,4).map(v=>+v.toFixed(2)),  backgroundColor:rgba(P.mint,.7), borderRadius:4 },
+      { label:'ชำระเอง',     data:SELF_total.slice(0,4).map(v=>+v.toFixed(2)), backgroundColor:rgba(P.peach,.7), borderRadius:4 },
+      { label:'ประกันสังคม', data:SSO_total.slice(0,4).map(v=>+v.toFixed(2)),  backgroundColor:rgba(P.lav,.7), borderRadius:4 },
+      { label:'พรบ.รถ',      data:PRB_total.slice(0,4).map(v=>+v.toFixed(2)),  backgroundColor:rgba(P.rose,.7), borderRadius:4 },
+      { label:'อื่นๆ',       data:OTHER_fund.slice(0,4).map(v=>+v.toFixed(2)), backgroundColor:rgba(P.yellow,.7), borderRadius:4 },
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{ position:'top', labels:{ boxWidth:10, padding:10, font:{size:10} } },
+      tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน` } }
+    },
+    scales:{
+      x:{ stacked:true, grid:{color:P.grid} },
+      y:{ stacked:true, grid:{color:P.grid}, ticks:{callback:v=>v+'M'} }
+    }
+  }
+});
+
+// ════════════════════════════════════════
+//  FUND PIE ปี 68 (ล่าสุด)
+// ════════════════════════════════════════
+new Chart(document.getElementById('fundPieChart'),{
+  type:'doughnut',
+  data:{
+    labels:['UC','เบิกตรง','ชำระเอง','ประกันสังคม','พรบ.รถ','อื่นๆ'],
+    datasets:[{
+      data:[UC_total[3],GOV_total[3],SELF_total[3],SSO_total[3],PRB_total[3],OTHER_fund[3]].map(v=>+v.toFixed(2)),
+      backgroundColor:[P.blue,P.mint,P.peach,P.lav,P.rose,P.yellow],
+      borderColor:'#fff', borderWidth:3, hoverOffset:6,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    cutout:'60%',
+    plugins:{
+      legend:{ position:'bottom', labels:{ boxWidth:10, padding:12, font:{size:11} } },
+      tooltip:{
+        callbacks:{
+          label: c => {
+            const total68 = [UC_total[3],GOV_total[3],SELF_total[3],SSO_total[3],PRB_total[3],OTHER_fund[3]].reduce((a,b)=>a+b,0);
+            return ` ${c.label}: ${c.parsed.toFixed(2)} ล้าน (${(c.parsed/total68*100).toFixed(1)}%)`;
+          }
+        }
+      }
+    }
+  }
+});
+
+// ════════════════════════════════════════
+//  SUPPORT CHART — LINE
+// ════════════════════════════════════════
+new Chart(document.getElementById('supportChart'),{
+  type:'line',
+  data:{
+    labels: yr,
+    datasets:[
+      { label:'ค่าเสื่อม/งบลงทุน',
+        data: deprec.map(v=>+(v/M).toFixed(2)),
+        borderColor: P.green, backgroundColor: 'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:P.green,
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+      { label:'เงินสนับสนุน',
+        data: support.map(v=>+(v/M).toFixed(2)),
+        borderColor: P.sky, backgroundColor: 'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:P.sky,
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+      { label:'เงินรับบริจาค',
+        data: donation.map(v=>+(v/M).toFixed(2)),
+        borderColor: P.rose, backgroundColor: 'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:P.rose,
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+      { label:'กองทุนหลักประกันตำบล',
+        data: fund_tambon.map(v=>+(v/M).toFixed(2)),
+        borderColor: P.yellow, backgroundColor: 'transparent',
+        borderWidth:2, pointRadius:5, pointBackgroundColor:P.yellow,
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{
+      legend:{ position:'top', labels:{ boxWidth:10, padding:14, font:{size:11} } },
+      tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน` } }
+    },
+    scales:{
+      x:{ grid:{ color:P.grid }, ticks:{ color:P.text } },
+      y:{ grid:{ color:P.grid }, ticks:{ color:P.text, callback:v=>v+'M' } }
+    }
+  }
+});
+
+// ════════════════════════════════════════
+//  OTHER INCOME MONITOR — LINE
+// ════════════════════════════════════════
+// รายได้อื่นๆ (หมวด 3) รายหัวข้อ ปี 65–68
+new Chart(document.getElementById('otherIncomeChart'),{
+  type:'line',
+  data:{
+    labels: yr,
+    datasets:[
+      { label:'ดอกเบี้ย',
+        data: interest.map(v=>+(v/M).toFixed(3)),
+        borderColor:'#7eb8f7', backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#7eb8f7',
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+      { label:'กองทุนหลักประกันสุขภาพตำบล',
+        data: fund_tambon.map(v=>+(v/M).toFixed(3)),
+        borderColor:'#ffe082', backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#ffe082',
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+      { label:'เงินรับบริจาค',
+        data: donation.map(v=>+(v/M).toFixed(3)),
+        borderColor:'#f48fb1', backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#f48fb1',
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+      { label:'เงินค่าเสื่อม/งบลงทุน',
+        data: deprec.map(v=>+(v/M).toFixed(3)),
+        borderColor:'#a5d6a7', backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#a5d6a7',
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+      { label:'เงินสนับสนุนจากหน่วยงานอื่น',
+        data: support.map(v=>+(v/M).toFixed(3)),
+        borderColor:'#80d8f7', backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:'#80d8f7',
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{
+      legend:{ position:'top', labels:{ boxWidth:10, padding:16, font:{size:11} } },
+      tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(3)} ล้าน` } }
+    },
+    scales:{
+      x:{ grid:{ color:P.grid }, ticks:{ color:P.text } },
+      y:{ grid:{ color:P.grid }, ticks:{ color:P.text, callback:v=>v+'M' } }
+    }
+  }
+});
+
+// ════════════════════════════════════════
+//  SUMMARY TABLE
+// ════════════════════════════════════════
+const rows = [
+  { name:'รายรับค่ารักษา', v:treat_sum },
+  { name:'รายได้ตามจ่าย',  v:follow_sum },
+  { name:'รายได้อื่นๆ',    v:other_sum },
+];
+const yrs = ['65','66','67','68','69*'];
+let html = `<thead><tr><th>หมวด</th>${yrs.map(y=>`<th>${y}</th>`).join('')}</tr></thead><tbody>`;
+rows.forEach(r=>{
+  html += `<tr><td>${r.name}</td>${r.v.map(v=>`<td>${(v/M).toFixed(2)}</td>`).join('')}</tr>`;
+});
+html += `<tr class="total"><td>รวมทั้งสิ้น</td>${total.map(v=>`<td>${(v/M).toFixed(2)}</td>`).join('')}</tr></tbody>`;
+document.getElementById('summaryTable').innerHTML = html;
+
+// ════════════════════════════════════════
+//  PRODUCTIVITY DATA
+// ════════════════════════════════════════
+const prodYr  = ['ปี 61','ปี 62','ปี 63','ปี 64','ปี 65','ปี 66','ปี 67','ปี 68'];
+const bedOcc  = [43.71, 38.87, 34.89, 43.60, 41.28, 39.86, 31.61, 25.31];
+const admit   = [136, 142, 126, 115, 97, 144, 125, 107];
+const adjRw   = [897.34, 898.60, 781.34, 768.07, 698.24, 905.59, 807.59, 240.76];
+const deptYr  = ['ปี 65','ปี 66','ปี 67','ปี 68'];
+const dental  = [1528159, 1905813, 1143055, 321154];
+const thai    = [127282,  303595,  312534,  83124];
+const physio  = [574079,  1398512, 1012192, 169690];
+
+// KPI Productivity
+const prodKpis = [
+  { label:'อัตราครองเตียง',     val:'25.31', unit:'% (ปี 68)',            note:'▼ จาก 31.61% (ปี 67)', dir:'down' },
+  { label:'Admit เฉลี่ย/เดือน', val:'107',   unit:'ราย (ปี 68)',           note:'▼ จาก 125 ราย (ปี 67)', dir:'down' },
+  { label:'Sum Adj RW',          val:'240.76',unit:'(ปี 68 ไม่ครบปี)',       note:'▼ จาก 807.59 (ปี 67)', dir:'down' },
+  { label:'รายได้ทันตกรรม',     val:'1.91',  unit:'ล้านบาท (ปี 66 สูงสุด)',note:'▼ 1.14 ล้าน (ปี 67)', dir:'down' },
+  { label:'รายได้กายภาพ',       val:'1.40',  unit:'ล้านบาท (ปี 66 สูงสุด)',note:'▼ 1.01 ล้าน (ปี 67)', dir:'down' },
+];
+const prodColors = [P.blue, P.mint, P.lav, P.peach, P.rose];
+document.getElementById('prodKpiRow').innerHTML = prodKpis.map((k,i)=>`
+  <div class="kpi">
+    <div class="kpi-stripe" style="background:${prodColors[i]}"></div>
+    <div class="kpi-yr">${k.label}</div>
+    <div class="kpi-val">${k.val}</div>
+    <div class="kpi-unit">${k.unit}</div>
+    <div class="kpi-delta"><span class="${k.dir}">${k.dir==='down'?'▼':'▲'} ${k.note}</span></div>
+  </div>`).join('');
+
+// อัตราครองเตียง
+new Chart(document.getElementById('bedChart'),{
+  type:'line',
+  data:{
+    labels: prodYr,
+    datasets:[
+      { label:'อัตราครองเตียง (%)',
+        data: bedOcc,
+        borderColor:P.blue, backgroundColor:rgba(P.blue,.12),
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:P.blue,
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:true },
+      { label:'เป้าหมาย 60%',
+        data: Array(prodYr.length).fill(60),
+        borderColor:rgba(P.rose,.5), backgroundColor:'transparent',
+        borderWidth:1.5, borderDash:[6,4], pointRadius:0, tension:0, fill:false },
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{
+      legend:{ position:'top', labels:{ boxWidth:10, padding:14, font:{size:11} } },
+      tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${c.parsed.y}` } }
+    },
+    scales:{
+      x:{ grid:{ color:P.grid }, ticks:{ color:P.text } },
+      y:{ grid:{ color:P.grid }, ticks:{ color:P.text, callback:v=>v+'%' }, min:0, max:80 }
+    }
+  }
+});
+
+// Admit เฉลี่ย
+new Chart(document.getElementById('admitChart'),{
+  type:'bar',
+  data:{
+    labels: prodYr,
+    datasets:[{
+      label:'ยอด Admit เฉลี่ย/เดือน',
+      data: admit,
+      backgroundColor: admit.map(v => rgba(v >= 130 ? P.mint : v >= 110 ? P.blue : P.peach, .75)),
+      borderRadius:6,
+    }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{ display:false },
+      tooltip:{ callbacks:{ label:c=>` ${c.parsed.y} ราย` } }
+    },
+    scales:{
+      x:{ grid:{ color:P.grid }, ticks:{ color:P.text } },
+      y:{ grid:{ color:P.grid }, ticks:{ color:P.text }, min:0 }
+    }
+  }
+});
+
+// Adj RW
+new Chart(document.getElementById('adjRwChart'),{
+  data:{
+    labels: prodYr,
+    datasets:[
+      { type:'bar',  label:'Sum Adj RW',
+        data:adjRw, backgroundColor:rgba(P.lav,.65), borderRadius:6 },
+      { type:'line', label:'แนวโน้ม',
+        data:adjRw, borderColor:P.peach, backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:P.peach,
+        pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{
+      legend:{ position:'top', labels:{ boxWidth:10, padding:14, font:{size:11} } },
+      tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)}` } }
+    },
+    scales:{
+      x:{ grid:{ color:P.grid }, ticks:{ color:P.text } },
+      y:{ grid:{ color:P.grid }, ticks:{ color:P.text } }
+    }
+  }
+});
+
+// แผนก mini charts
+const deptCfg = (id, data, color) => new Chart(document.getElementById(id),{
+  type:'bar',
+  data:{
+    labels: deptYr,
+    datasets:[{ data, backgroundColor:rgba(color,.65), borderRadius:6 }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false },
+      tooltip:{ callbacks:{ label:c=>` ${c.parsed.y.toLocaleString()} บาท` } } },
+    scales:{
+      x:{ grid:{ color:P.grid }, ticks:{ color:P.text } },
+      y:{ grid:{ color:P.grid }, ticks:{ color:P.text,
+        callback:v=>v>=1000000?(v/1000000).toFixed(1)+'M':(v/1000).toFixed(0)+'K' } }
+    }
+  }
+});
+deptCfg('dentalChart', dental, P.peach);
+deptCfg('thaiChart',   thai,   P.mint);
+deptCfg('physioChart', physio, P.sky);
+
+// เปรียบเทียบแผนก
+new Chart(document.getElementById('deptCompareChart'),{
+  type:'line',
+  data:{
+    labels: deptYr,
+    datasets:[
+      { label:'ทันตกรรม',    data:dental, borderColor:P.peach, backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:P.peach, pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+      { label:'แผนไทย',     data:thai,   borderColor:P.mint,  backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:P.mint,  pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+      { label:'กายภาพบำบัด',data:physio, borderColor:P.sky,   backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:5, pointBackgroundColor:P.sky,   pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false },
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    interaction:{ mode:'index', intersect:false },
+    plugins:{
+      legend:{ position:'top', labels:{ boxWidth:10, padding:16, font:{size:11} } },
+      tooltip:{ callbacks:{ label:c=>` ${c.dataset.label}: ${c.parsed.y.toLocaleString()} บาท` } }
+    },
+    scales:{
+      x:{ grid:{ color:P.grid }, ticks:{ color:P.text } },
+      y:{ grid:{ color:P.grid }, ticks:{ color:P.text,
+        callback:v=>v>=1000000?(v/1000000).toFixed(1)+'M':(v/1000).toFixed(0)+'K' } }
+    }
+  }
+});
+
+// ════════════════════════════════════════
+//  EXPENSE — items data structure (per skill)
+// ════════════════════════════════════════
+const EYR = ['ปี 65','ปี 66','ปี 67','ปี 68'];
+const G = {color:'rgba(180,160,240,0.12)'};
+const fmtN = v => v>0 ? Number(v).toLocaleString('th') : '<span class="nd">–</span>';
+const pct = (a,b) => {
+  if(!a||!b) return '–';
+  const p=((b-a)/a*100);
+  return p>=0 ? `<span class="cn">▲ +${p.toFixed(1)}%</span>` : `<span class="cp">▼ ${p.toFixed(1)}%</span>`;
+};
+
+const items = [
+  // บุคลากร — fixed
+  {n:'ลูกจ้างชั่วคราวรายเดือน',    cat:'บุคลากร', type:'fixed',       v:[441840,1909810,1384480,720270]},
+  {n:'ลูกจ้างชั่วคราวรายวัน',      cat:'บุคลากร', type:'fixed',       v:[1356180,1536720,1571200,1786640]},
+  {n:'พนักงานกระทรวงสาธารณสุข',    cat:'บุคลากร', type:'fixed',       v:[2523700,1761660,2395480,2668452]},
+  {n:'ค่าตอบแทนไม่ทำเวชปฏิบัติ',   cat:'บุคลากร', type:'fixed',       v:[665000,570000,655000,640000]},
+  {n:'เงิน พตส.',                   cat:'บุคลากร', type:'fixed',       v:[36000,144661,103500,37791]},
+  {n:'ค่าตอบแทน ฉ.11',              cat:'บุคลากร', type:'fixed',       v:[2215841,1903671,1801700,1859785]},
+  {n:'ค่าตอบแทน ฉ.12',              cat:'บุคลากร', type:'fixed',       v:[354400,343200,371600,389100]},
+  {n:'ค่าตอบแทนนอกเวลาราชการ',      cat:'บุคลากร', type:'fixed',       v:[4541636,4544211,5174112,5501398]},
+  {n:'ค่าตอบแทนเจ้าหน้าที่บ่าย-ดึก',cat:'บุคลากร', type:'fixed',      v:[296160,440040,569160,469080]},
+  {n:'ค่าชันสูตรพลิกศพ',            cat:'บุคลากร', type:'fixed',       v:[5250,0,1500,7950]},
+  {n:'เงินสมทบประกันสังคม (นายจ้าง)',cat:'บุคลากร', type:'fixed',      v:[129001,239218,255900,214419]},
+  {n:'ค่าใช้จ่ายเดินทางราชการ',     cat:'บุคลากร', type:'fixed',       v:[59340,277926,248992,611370]},
+  // ยา/เวชภัณฑ์ — variable
+  {n:'ค่ายา',                       cat:'ยา/เวชภัณฑ์', type:'variable', v:[2472186,3337913,3218886,3147351]},
+  {n:'เวชภัณฑ์มิใช่ยา/วัสดุการแพทย์',cat:'ยา/เวชภัณฑ์',type:'variable',v:[1391593,1378405,1428726,1047586]},
+  {n:'วัสดุทันตกรรม',               cat:'ยา/เวชภัณฑ์', type:'variable', v:[178751,242998,279764,160782]},
+  {n:'วัสดุวิทยาศาสตร์การแพทย์',    cat:'ยา/เวชภัณฑ์', type:'variable', v:[3111651,1284124,1375481,1352936]},
+  // ค่าใช้สอย
+  {n:'ซ่อมแซมยานพาหนะ',             cat:'ค่าใช้สอย', type:'intermittent', grp:'ซ่อมแซม', v:[125137,358739,178686,120844]},
+  {n:'ซ่อมแซมครุภัณฑ์การแพทย์',    cat:'ค่าใช้สอย', type:'intermittent', grp:'ซ่อมแซม', v:[100800,83900,170318,191025]},
+  {n:'ซ่อมแซมครุภัณฑ์อื่น',         cat:'ค่าใช้สอย', type:'intermittent', grp:'ซ่อมแซม', v:[1430,1500,27180,10593]},
+  {n:'ซ่อมแซมสิ่งก่อสร้าง',          cat:'ค่าใช้สอย', type:'intermittent', grp:'ซ่อมแซม', v:[228300,58500,19000,407201]},
+  {n:'ซ่อมแซมครุภัณฑ์คอมพิวเตอร์',  cat:'ค่าใช้สอย', type:'intermittent', grp:'ซ่อมแซม', v:[174540,62670,38150,11170]},
+  {n:'PACS',                         cat:'ค่าใช้สอย', type:'fixed',        grp:'IT/ระบบ',  v:[132000,364000,456000,380000]},
+  {n:'HosXP',                        cat:'ค่าใช้สอย', type:'fixed',        grp:'IT/ระบบ',  v:[19855,0,21755,28405]},
+  {n:'Paperless IPD',                cat:'ค่าใช้สอย', type:'intermittent', grp:'IT/ระบบ',  v:[0,0,492200,42800]},
+  {n:'Firewall (ดูแลระบบ)',          cat:'ค่าใช้สอย', type:'fixed',        grp:'IT/ระบบ',  v:[0,0,28248,47080]},
+  {n:'Cyber Security',               cat:'ค่าใช้สอย', type:'intermittent', grp:'IT/ระบบ',  v:[0,0,0,300000]},
+  {n:'ระบบเรียกคิว',                  cat:'ค่าใช้สอย', type:'intermittent', grp:'IT/ระบบ',  v:[0,0,0,123050]},
+  {n:'บริษัทรักษาความปลอดภัย',       cat:'ค่าใช้สอย', type:'fixed',        grp:'จ้างเหมาบริการ', v:[0,0,126000,108000]},
+  {n:'ตรวจห้องปฏิบัติการ',           cat:'ค่าใช้สอย', type:'variable',     grp:'จ้างเหมาบริการ', v:[157470,275874,221795,193080]},
+  {n:'กำจัดขยะติดเชื้อ',             cat:'ค่าใช้สอย', type:'variable',     grp:'จ้างเหมาบริการ', v:[189260,26288,89205,73350]},
+  {n:'ทำความสะอาด',                  cat:'ค่าใช้สอย', type:'fixed',        grp:'จ้างเหมาบริการ', v:[48000,6000,66000,6000]},
+  {n:'บำรุงรักษาเครื่องปรับอากาศ',   cat:'ค่าใช้สอย', type:'fixed',        grp:'ประกัน+อื่นๆ',  v:[5200,36800,42320,12200]},
+  {n:'เบี้ยประกันภัย',               cat:'ค่าใช้สอย', type:'fixed',        grp:'ประกัน+อื่นๆ',  v:[31820,131332,123621,123621]},
+  {n:'ค่าธรรมเนียมธนาคาร',           cat:'ค่าใช้สอย', type:'fixed',        grp:'ประกัน+อื่นๆ',  v:[258,318,354,277]},
+  // สาธารณูปโภค — fixed
+  {n:'ค่าไฟฟ้า',                    cat:'สาธารณูปโภค', type:'fixed',       v:[879074,1574507,1176276,1290850]},
+  {n:'ค่าประปา',                    cat:'สาธารณูปโภค', type:'fixed',       v:[55,65,50,50685]},
+  {n:'ค่าโทรศัพท์+อินเทอร์เน็ต',    cat:'สาธารณูปโภค', type:'fixed',       v:[40781,70340,80019,68818]},
+  {n:'ค่าไปรษณีย์',                 cat:'สาธารณูปโภค', type:'fixed',       v:[13567,17695,19654,15830]},
+  // วัสดุทั่วไป
+  {n:'วัสดุสำนักงาน',               cat:'วัสดุทั่วไป', type:'variable',    grp:'สำนักงาน+คอม', v:[259265,243547,236130,184266]},
+  {n:'วัสดุยานพาหนะและขนส่ง',       cat:'วัสดุทั่วไป', type:'variable',    grp:'เชื้อเพลิง+ยาน', v:[147130,17750,13671,57913]},
+  {n:'วัสดุเชื้อเพลิงและหล่อลื่น',   cat:'วัสดุทั่วไป', type:'variable',    grp:'เชื้อเพลิง+ยาน', v:[455530,739813,496330,446968]},
+  {n:'วัสดุไฟฟ้าและวิทยุ',           cat:'วัสดุทั่วไป', type:'intermittent',grp:'ก่อสร้าง+ไฟฟ้า', v:[4381,15667,155353,17687]},
+  {n:'วัสดุบริโภค (อาหารคนไข้)',     cat:'วัสดุทั่วไป', type:'variable',    grp:'งานบ้าน+อาหาร', v:[348835,403575,349365,312755]},
+  {n:'วัสดุคอมพิวเตอร์ (หมึก)',      cat:'วัสดุทั่วไป', type:'variable',    grp:'สำนักงาน+คอม', v:[215815,217030,183000,233110]},
+  {n:'วัสดุงานบ้านงานครัว',         cat:'วัสดุทั่วไป', type:'variable',    grp:'งานบ้าน+อาหาร', v:[359236,387064,358097,461626]},
+  {n:'วัสดุก่อสร้าง',               cat:'วัสดุทั่วไป', type:'intermittent',grp:'ก่อสร้าง+ไฟฟ้า', v:[144204,144661,106575,184863]},
+  // แผนงาน/โอน
+  {n:'โครงการ(เงินบำรุง)',              cat:'แผนงาน',      type:'intermittent',v:[0,238035,480410,253670]},
+  {n:'โอนให้ รพ.สต./สสอ.',          cat:'โอน รพ.สต.',   type:'fixed',       v:[5854059,1658194,866000,220800]},
+  // อื่นๆ
+  {n:'ค่ารักษา UC นค.1',            cat:'อื่นๆ',         type:'variable',    v:[930613,8568,700,534]},
+  {n:'ค่าใช้จ่ายผลิตบุคลากรแพทย์',  cat:'อื่นๆ',         type:'fixed',       v:[0,0,0,200000]},
+  // งบลงทุน — invest flag
+  {n:'ครุภัณฑ์',                    cat:'งบลงทุน', type:'intermittent', invest:true, v:[1389179,1525057,662153,1465854]},
+  {n:'สิ่งก่อสร้าง',                cat:'งบลงทุน', type:'intermittent', invest:true, v:[0,1009758,0,0]},
+  {n:'ค่าเสื่อมราคา',               cat:'งบลงทุน', type:'intermittent', invest:true, v:[236673,0,497000,487000]},
+  {n:'เงินบริจาค',                  cat:'งบลงทุน', type:'intermittent', invest:true, v:[0,729419,822807,0]},
+];
+
+// helpers
+const cats    = ['บุคลากร','ยา/เวชภัณฑ์','ค่าใช้สอย','สาธารณูปโภค','วัสดุทั่วไป','แผนงาน','โอน รพ.สต.','อื่นๆ'];
+const noInvest = items.filter(i=>!i.invest);
+const sumCat  = (cat,yi) => noInvest.filter(i=>i.cat===cat).reduce((s,i)=>s+(i.v[yi]||0),0);
+const sumType = (type,yi)=> noInvest.filter(i=>i.type===type).reduce((s,i)=>s+(i.v[yi]||0),0);
+const sumAll  = (yi)     => noInvest.reduce((s,i)=>s+(i.v[yi]||0),0);
+const catColors  = ['#d8c8f8','#bde4f7','#b4edda','#fde8a0','#fcd0c0','#c8e8d0','#fcc8d8','#e0e0e0'];
+const catColorsS = ['#9b7ee0','#5aafe0','#34b87a','#d4a000','#e05830','#3a8c58','#e04878','#888'];
+
+// ── KPI Cards (Tab1)
+const opTotals = [0,1,2,3].map(i=>sumAll(i));
+const expKpiData = [
+  {label:'รายจ่ายดำเนินงาน ปี 65', val:(opTotals[0]/1e6).toFixed(2), unit:'ล้านบาท', note:'ฐาน', cls:''},
+  {label:'รายจ่ายดำเนินงาน ปี 66', val:(opTotals[1]/1e6).toFixed(2), unit:'ล้านบาท', note:pct(opTotals[0],opTotals[1]), cls:''},
+  {label:'รายจ่ายดำเนินงาน ปี 67', val:(opTotals[2]/1e6).toFixed(2), unit:'ล้านบาท', note:pct(opTotals[1],opTotals[2]), cls:''},
+  {label:'รายจ่ายดำเนินงาน ปี 68', val:(opTotals[3]/1e6).toFixed(2), unit:'ล้านบาท', note:pct(opTotals[2],opTotals[3]), cls:''},
+  {label:'บุคลากร % รายจ่าย ปี 68', val:((sumCat('บุคลากร',3)/opTotals[3])*100).toFixed(1), unit:'% ของรายจ่ายดำเนินงาน', note:'ค่าใช้จ่ายสูงสุด', cls:''},
+];
+const kpiStripes = ['#d8c8f8','#bde4f7','#b4edda','#fad4b0','#fcc8d8'];
+document.getElementById('expKpiRow').innerHTML = expKpiData.map((k,i)=>`
+  <div class="exp-kpi" style="--c:${kpiStripes[i]}">
+    <style>.exp-kpi:nth-child(${i+1})::before{background:${kpiStripes[i]};}</style>
+    <div class="exp-kpi-label">${k.label}</div>
+    <div class="exp-kpi-val">${k.val}</div>
+    <div class="exp-kpi-unit">${k.unit}</div>
+    <div class="exp-kpi-note">${k.note}</div>
+  </div>`).join('');
+
+// ── Stacked Bar (Tab1, ไม่รวมลงทุน)
+new Chart(document.getElementById('expStackedBar'),{
+  type:'bar',
+  data:{
+    labels:EYR,
+    datasets: cats.map((cat,i)=>({
+      label:cat,
+      data:[0,1,2,3].map(yi=>+(sumCat(cat,yi)/1e6).toFixed(2)),
+      backgroundColor:catColors[i]+'dd', borderRadius:4, stack:'s'
+    }))
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:10,font:{size:10}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน`}}},
+    scales:{x:{stacked:true,grid:G},y:{stacked:true,grid:G,ticks:{callback:v=>v+'M'}}}}
+});
+
+// ── Trend Line (Tab1)
+const target3 = [0,1,2,3].map(i=>+(opTotals[0]/1e6*(Math.pow(0.97,i))).toFixed(2));
+new Chart(document.getElementById('expTrendLine'),{
+  type:'line',
+  data:{
+    labels:EYR,
+    datasets:[
+      {label:'รายจ่ายดำเนินงาน',data:opTotals.map(v=>+(v/1e6).toFixed(2)),borderColor:'#9b7ee0',backgroundColor:'rgba(155,126,224,.1)',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#9b7ee0',pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.35,fill:true},
+      {label:'รายจ่ายรวม (รวมลงทุน)',data:[32212802,30315141,28892389,28731987].map(v=>+(v/1e6).toFixed(2)),borderColor:'#5aafe0',backgroundColor:'transparent',borderWidth:2,pointRadius:4,pointBackgroundColor:'#5aafe0',pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.35,fill:false},
+      {label:'เป้าหมายลด 3%/ปี',data:target3,borderColor:'#e04878',backgroundColor:'transparent',borderWidth:1.5,borderDash:[6,4],pointRadius:3,tension:.2,fill:false},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:10,font:{size:10}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน`}}},
+    scales:{x:{grid:G},y:{grid:G,ticks:{callback:v=>v+'M'}}}}
+});
+
+// ── Mini cat bars
+[['บุคลากร','ec1','#d8c8f8'],['ยา/เวชภัณฑ์','ec2','#bde4f7'],['ค่าใช้สอย','ec3','#b4edda'],
+ ['สาธารณูปโภค','ec4','#fde8a0'],['วัสดุทั่วไป','ec5','#fcd0c0'],['แผนงาน+โอน','ec6','#c8e8d0']
+].forEach(([cat,id,col],ci)=>{
+  const d = ci<5
+    ? [0,1,2,3].map(yi=>+((sumCat(cat,yi))/1e6).toFixed(2))
+    : [0,1,2,3].map(yi=>+((sumCat('แผนงาน',yi)+sumCat('โอน รพ.สต.',yi))/1e6).toFixed(2));
+  new Chart(document.getElementById(id),{
+    type:'bar',
+    data:{labels:EYR,datasets:[{data:d,backgroundColor:col+'ee',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y.toFixed(2)} ล้าน`}}},
+      scales:{x:{grid:G,ticks:{font:{size:9}}},y:{grid:G,ticks:{callback:v=>v+'M',font:{size:9}}}}}
+  });
+});
+
+// ── Horizontal Bar — ค่าใช้สอย
+const svcGrps = ['ซ่อมแซม','IT/ระบบ','จ้างเหมาบริการ','ประกัน+อื่นๆ'];
+const svcData = yi => svcGrps.map(g=> items.filter(i=>i.cat==='ค่าใช้สอย'&&i.grp===g).reduce((s,i)=>s+(i.v[yi]||0),0)/1e6);
+new Chart(document.getElementById('expSvcHBar'),{
+  type:'bar',
+  data:{labels:svcGrps, datasets:[
+    {label:'ปี 65',data:svcData(0),backgroundColor:'rgba(216,200,248,0.85)',borderRadius:3},
+    {label:'ปี 66',data:svcData(1),backgroundColor:'rgba(189,228,247,0.85)',borderRadius:3},
+    {label:'ปี 67',data:svcData(2),backgroundColor:'rgba(180,237,218,0.85)',borderRadius:3},
+    {label:'ปี 68',data:svcData(3),backgroundColor:'rgba(250,212,176,1)',borderRadius:3},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:10,font:{size:10}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${Number((c.parsed.x*1e6).toFixed(0)).toLocaleString('th')} บาท`}}},
+    scales:{x:{grid:G,ticks:{callback:v=>v.toFixed(1)+'M'}},y:{grid:{display:false}}}}
+});
+
+// ── Horizontal Bar — วัสดุทั่วไป
+const supGrps = ['เชื้อเพลิง+ยาน','สำนักงาน+คอม','งานบ้าน+อาหาร','ก่อสร้าง+ไฟฟ้า'];
+const supData = yi => supGrps.map(g=> items.filter(i=>i.cat==='วัสดุทั่วไป'&&i.grp===g).reduce((s,i)=>s+(i.v[yi]||0),0)/1e6);
+new Chart(document.getElementById('expSupHBar'),{
+  type:'bar',
+  data:{labels:supGrps, datasets:[
+    {label:'ปี 65',data:supData(0),backgroundColor:'rgba(216,200,248,0.85)',borderRadius:3},
+    {label:'ปี 66',data:supData(1),backgroundColor:'rgba(189,228,247,0.85)',borderRadius:3},
+    {label:'ปี 67',data:supData(2),backgroundColor:'rgba(180,237,218,0.85)',borderRadius:3},
+    {label:'ปี 68',data:supData(3),backgroundColor:'rgba(250,212,176,1)',borderRadius:3},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:10,font:{size:10}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${Number((c.parsed.x*1e6).toFixed(0)).toLocaleString('th')} บาท`}}},
+    scales:{x:{grid:G,ticks:{callback:v=>v.toFixed(2)+'M'}},y:{grid:{display:false}}}}
+});
+
+// ── Invest box
+const investItems = items.filter(i=>i.invest);
+const investKpiGrid = document.getElementById('investKpiGrid');
+investKpiGrid.innerHTML = EYR.map((yr,i)=>{
+  const t = investItems.reduce((s,it)=>s+(it.v[i]||0),0);
+  return `<div class="inv-kpi"><div class="inv-kpi-yr">${yr}</div>
+    <div class="inv-kpi-val">${(t/1e6).toFixed(2)}</div>
+    <div class="inv-kpi-unit">ล้านบาท</div></div>`;
+}).join('');
+new Chart(document.getElementById('expInvestBar'),{
+  type:'bar',
+  data:{labels:EYR, datasets:investItems.map((it,i)=>({
+    label:it.n, data:it.v.map(v=>+(v/1e6).toFixed(2)),
+    backgroundColor:['#d8c8f8','#bde4f7','#fde8a0','#fcc8d8'][i]+'dd', borderRadius:4, stack:'s'
+  }))},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:10,font:{size:10}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน`}}},
+    scales:{x:{stacked:true,grid:G},y:{stacked:true,grid:G,ticks:{callback:v=>v+'M'}}}}
+});
+document.getElementById('investTbl').innerHTML =
+  `<thead><tr><th>รายการ</th>${EYR.map(y=>`<th>${y}</th>`).join('')}</tr></thead><tbody>`+
+  investItems.map(it=>`<tr><td>${it.n}</td>${it.v.map(v=>`<td>${fmtN(v)}</td>`).join('')}</tr>`).join('')+
+  `<tr class="tr-total"><td>รวม</td>${[0,1,2,3].map(i=>`<td>${fmtN(investItems.reduce((s,it)=>s+(it.v[i]||0),0))}</td>`).join('')}</tr></tbody>`;
+
+// ════════ TAB 2 — Fixed/Variable/Intermittent ════════
+const fixTot  = [0,1,2,3].map(i=>sumType('fixed',i));
+const varTot  = [0,1,2,3].map(i=>sumType('variable',i));
+const intTot  = [0,1,2,3].map(i=>sumType('intermittent',i));
+document.getElementById('costCards').innerHTML = [
+  {cls:'fx',icon:'🔒',label:'Fixed Cost',sub:'บุคลากร · ค่าไฟ · ระบบ IT · ประกัน',color:'#5b3fbf',tot:fixTot},
+  {cls:'vr',icon:'📈',label:'Variable Cost',sub:'ค่ายา · วัสดุวิทย์ · อาหาร · เชื้อเพลิง',color:'#1a7a52',tot:varTot},
+  {cls:'it',icon:'🔀',label:'Intermittent Cost',sub:'ซ่อมแซม · ครุภัณฑ์ · IT ใหม่ · โครงการ',color:'#9a5c00',tot:intTot},
+].map(c=>`
+  <div class="cost-card ${c.cls}">
+    <div class="cost-card-title">${c.icon} ${c.label}</div>
+    <div class="cost-card-val">${(c.tot[3]/1e6).toFixed(2)} <span style="font-size:14px">ล้าน</span></div>
+    <div class="cost-card-sub">ปี 68 &nbsp;|&nbsp; ${pct(c.tot[2],c.tot[3])}<br>${c.sub}</div>
+  </div>`).join('');
+
+new Chart(document.getElementById('fviGroupBar'),{
+  type:'bar',
+  data:{labels:EYR, datasets:[
+    {label:'Fixed',  data:fixTot.map(v=>+(v/1e6).toFixed(2)), backgroundColor:'rgba(200,184,248,.8)', borderRadius:4},
+    {label:'Variable',data:varTot.map(v=>+(v/1e6).toFixed(2)),backgroundColor:'rgba(164,228,196,.8)', borderRadius:4},
+    {label:'Intermittent',data:intTot.map(v=>+(v/1e6).toFixed(2)),backgroundColor:'rgba(250,200,150,.8)',borderRadius:4},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:14,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน`}}},
+    scales:{x:{grid:G},y:{grid:G,ticks:{callback:v=>v+'M'}}}}
+});
+new Chart(document.getElementById('fviDonut'),{
+  type:'doughnut',
+  data:{labels:['Fixed','Variable','Intermittent'],
+    datasets:[{data:[fixTot[3],varTot[3],intTot[3]].map(v=>+(v/1e6).toFixed(2)),
+      backgroundColor:['#c8b8f8','#a4e4c4','#fac896'],borderColor:'#fff',borderWidth:3,hoverOffset:6}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>{const t=(fixTot[3]+varTot[3]+intTot[3])/1e6;return ` ${c.label}: ${c.parsed.toFixed(2)} ล้าน (${(c.parsed/t*100).toFixed(1)}%)`;} }}}}
+});
+new Chart(document.getElementById('fviStackTrend'),{
+  data:{labels:EYR, datasets:[
+    {type:'bar',label:'Fixed',  data:fixTot.map(v=>+(v/1e6).toFixed(2)),backgroundColor:'rgba(200,184,248,.75)',borderRadius:4,stack:'s'},
+    {type:'bar',label:'Variable',data:varTot.map(v=>+(v/1e6).toFixed(2)),backgroundColor:'rgba(164,228,196,.8)',borderRadius:4,stack:'s'},
+    {type:'bar',label:'Intermittent',data:intTot.map(v=>+(v/1e6).toFixed(2)),backgroundColor:'rgba(250,200,150,.8)',borderRadius:4,stack:'s'},
+    {type:'line',label:'รวม',data:opTotals.map(v=>+(v/1e6).toFixed(2)),borderColor:'#9b7ee0',backgroundColor:'transparent',borderWidth:2,pointRadius:4,pointBackgroundColor:'#9b7ee0',pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.35,fill:false,order:0},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:10,font:{size:10}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน`}}},
+    scales:{x:{stacked:true,grid:G},y:{stacked:true,grid:G,ticks:{callback:v=>v+'M'}}}}
+});
+
+// tables Tab2
+const buildFviTbl = (id, type) => {
+  const rows = noInvest.filter(i=>i.type===type);
+  document.getElementById(id).innerHTML =
+    `<thead><tr><th>รายการ</th><th>หมวด</th>${EYR.map(y=>`<th>${y}</th>`).join('')}<th>เปลี่ยนแปลง 67→68</th></tr></thead><tbody>`+
+    rows.map(it=>`<tr><td>${it.n}</td><td>${it.cat}</td>${it.v.map(v=>`<td>${fmtN(v)}</td>`).join('')}<td>${pct(it.v[2],it.v[3])}</td></tr>`).join('')+
+    `<tr class="tr-total"><td colspan="2">รวม</td>${[0,1,2,3].map(i=>`<td>${fmtN(rows.reduce((s,it)=>s+(it.v[i]||0),0))}</td>`).join('')}<td>${pct(rows.reduce((s,it)=>s+(it.v[2]||0),0),rows.reduce((s,it)=>s+(it.v[3]||0),0))}</td></tr></tbody>`;
+};
+buildFviTbl('tblFixed','fixed');
+buildFviTbl('tblVariable','variable');
+buildFviTbl('tblIntermittent','intermittent');
+
+// ════════ TAB 3 — Top items + Plan ════════
+const sortedByV68 = [...noInvest].filter(i=>(i.v[3]||0)>0).sort((a,b)=>(b.v[3]||0)-(a.v[3]||0));
+const top10 = sortedByV68.slice(0,10);
+new Chart(document.getElementById('top10Bar'),{
+  type:'bar',
+  data:{labels:top10.map(i=>i.n),
+    datasets:[{label:'ปี 68',data:top10.map(i=>+(i.v[3]/1e6).toFixed(2)),
+      backgroundColor:'rgba(216,200,248,.9)',borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${Number((c.parsed.x*1e6).toFixed(0)).toLocaleString('th')} บาท`}}},
+    scales:{x:{grid:G,ticks:{callback:v=>v.toFixed(1)+'M'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+const chg = noInvest.filter(i=>(i.v[2]||0)>0||(i.v[3]||0)>0)
+  .map(i=>({...i,d:(i.v[3]||0)-(i.v[2]||0)}))
+  .sort((a,b)=>Math.abs(b.d)-Math.abs(a.d)).slice(0,10);
+new Chart(document.getElementById('changeBar'),{
+  type:'bar',
+  data:{labels:chg.map(i=>i.n),
+    datasets:[{label:'เปลี่ยนแปลง (บาท)',data:chg.map(i=>+(i.d/1e6).toFixed(2)),
+      backgroundColor:chg.map(i=>i.d>=0?'rgba(250,200,150,.9)':'rgba(180,237,218,.9)'),borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>{const v=c.parsed.x;return ` ${v>=0?'▲ +':'▼ '}${Number((Math.abs(v)*1e6).toFixed(0)).toLocaleString('th')} บาท`;} }}},
+    scales:{x:{grid:G,ticks:{callback:v=>(v>=0?'+':'')+v.toFixed(1)+'M'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+// Analysis table
+const risk = v => v>500000?'<span style="color:#dc3545">⚠ สูง</span>':v>200000?'<span style="color:#e8872a">● กลาง</span>':'<span style="color:#198754">✓ ต่ำ</span>';
+const advice = {
+  'บุคลากร':'ทบทวนโครงสร้าง OT / ตรวจสอบความเหมาะสมอัตรากำลัง',
+  'ยา/เวชภัณฑ์':'จัดซื้อรวม / ใช้ยา generic / ลด waste',
+  'ค่าใช้สอย':'ต่อรองสัญญาระยะยาว / ประเมิน ROI ระบบ IT',
+  'สาธารณูปโภค':'ติดตาม smart meter / ปรับพฤติกรรมการใช้ไฟ',
+  'วัสดุทั่วไป':'ระบบควบคุมสต็อก / ลดการสั่งเกินความจำเป็น',
+  'แผนงาน':'ทบทวนโครงการที่ไม่ได้ผลลัพธ์ชัดเจน',
+  'โอน รพ.สต.':'ประเมินผลผลิตการโอน / ปรับตามภาระงานจริง',
+  'อื่นๆ':'ตรวจสอบสิทธิ UC / ลดตาม Use case ที่แท้จริง',
+};
+document.getElementById('tblAnalysis').innerHTML =
+  `<thead><tr><th>#</th><th>รายการ</th><th>หมวด</th><th>ปี 67</th><th>ปี 68</th><th>เปลี่ยนแปลง</th><th>ความเสี่ยง</th><th>แนวทาง</th></tr></thead><tbody>`+
+  sortedByV68.slice(0,15).map((it,i)=>`<tr>
+    <td>${i+1}</td><td>${it.n}</td><td>${it.cat}</td>
+    <td>${fmtN(it.v[2])}</td><td>${fmtN(it.v[3])}</td>
+    <td>${pct(it.v[2],it.v[3])}</td>
+    <td>${risk(Math.abs((it.v[3]||0)-(it.v[2]||0)))}</td>
+    <td style="font-size:11px">${advice[it.cat]||'–'}</td>
+  </tr>`).join('')+`</tbody>`;
+// Action plans
+const plans = [
+  {icon:'👥',title:'บุคลากร',col:'#e8e0fc',border:'#c8b8f4',items:['ทบทวน OT ส่วนเกิน','ประเมินอัตรากำลัง พกส.','แนวทาง ฉ.11 ให้เหมาะสม']},
+  {icon:'💊',title:'ยา/เวชภัณฑ์',col:'#d4f4e4',border:'#a8e4c0',items:['จัดซื้อรวม รพ.เครือข่าย','ส่งเสริมยา generic','ลด Expired stock']},
+  {icon:'⚡',title:'สาธารณูปโภค',col:'#fde8c0',border:'#f4c878',items:['Smart meter ค่าไฟ','ตรวจสอบค่าน้ำ','ลด idle equipment']},
+  {icon:'🔧',title:'ค่าใช้สอย',col:'#fdd8e0',border:'#f4b8c8',items:['PM ครุภัณฑ์สม่ำเสมอ','ต่อรองสัญญา IT','ประเมิน ROI ระบบใหม่']},
+  {icon:'📦',title:'งบลงทุน',col:'#d8eef8',border:'#a8d8f0',items:['จัดลำดับความสำคัญ','ขอทุนภายนอก','แผนค่าเสื่อม']},
+  {icon:'📅',title:'ติดตามรายเดือน',col:'#e8f8e8',border:'#a8e8a8',items:['รายงาน CFO ทุกเดือน','Alert เมื่อเกิน Budget 80%','เปรียบเทียบ MoM']},
+];
+document.getElementById('actionPlans').innerHTML = plans.map(p=>`
+  <div style="background:${p.col};border:1px solid ${p.border};border-radius:16px;padding:18px 20px">
+    <div style="font-size:15px;font-weight:700;color:#3a2d6a;margin-bottom:10px">${p.icon} ${p.title}</div>
+    <ul style="padding-left:16px;font-size:12px;color:#5a4a80;line-height:1.8">
+      ${p.items.map(i=>`<li>${i}</li>`).join('')}
+    </ul>
+  </div>`).join('');
+
+// ── Expense sub-tab switching
+function showExpTab(i, btn){
+  document.querySelectorAll('.exp-sec').forEach((s,j)=>s.classList.toggle('active',i===j));
+  document.querySelectorAll('.exp-stab').forEach((b,j)=>b.classList.toggle('active',i===j));
+}
+
+// ════════════════════════════════════════
+//  FINANCE DATA + CHARTS (wrapped in load to avoid variable conflicts)
+// ════════════════════════════════════════
+window.addEventListener('load', function(){
+const FYR = ['ปี 65','ปี 66','ปี 67','ปี 68','ปี 69*'];
+const fund     = [9866449.65, 12128216.38, 11202559.81, 5621160.91, 5794910.26];
+const debt     = [4148801.36, 5046204.04,  4747463.01,  6199498.52, 6969408.88];
+const netFund  = [5717648.29, 7082012.34,  6455096.80, -578337.61, -1174498.62];
+const curRatio = [3.14, 3.50, 4.84, 2.79, 2.72];
+const quiRatio = [2.83, 3.26, 4.59, 2.64, 2.56];
+const casRatio = [2.38, 2.40, 2.36, 0.91, 0.83];
+const nwcArr   = [8878634.38, 12614806.17, 18212923.60, 11123611.54, 11953788.07];
+const arTotal  = [1883518.87, 4335839.68, 10500593.50, 10759203.62, 12062039.86];
+
+const arItems = [
+  {n:'UC IP',v:417632.25,cat:'UC'},{n:'UC ในสังกัด',v:212036.00,cat:'UC'},
+  {n:'UC OP เฉพาะ',v:29155.00,cat:'UC'},
+  {n:'ประกันสังคม OP',v:344314.00,cat:'ประกันสังคม'},{n:'ประกันสังคม IP',v:103541.75,cat:'ประกันสังคม'},
+  {n:'ปกส.กองทุนทดแทน',v:15110.00,cat:'ประกันสังคม'},{n:'ปกส.72 ชม.',v:2907.00,cat:'ประกันสังคม'},
+  {n:'กรมบัญชีกลาง OP',v:741034.75,cat:'เบิกตรง'},{n:'กรมบัญชีกลาง IP',v:131109.25,cat:'เบิกตรง'},
+  {n:'อปท. OP',v:307937.99,cat:'เบิกตรง'},{n:'อปท. IP',v:50622.75,cat:'เบิกตรง'},
+  {n:'ระบบแพทย์ฉุกเฉิน',v:71100.00,cat:'อื่นๆ'},{n:'อุดหนุน IP',v:72594.00,cat:'อื่นๆ'},
+  {n:'ชำระเงิน OP',v:112937.00,cat:'อื่นๆ'},{n:'เบิกต้นสังกัด IP',v:10251.00,cat:'อื่นๆ'},
+  {n:'พรบ.OP',v:27091.00,cat:'อื่นๆ'},{n:'พรบ.IP',v:15880.25,cat:'อื่นๆ'},
+  {n:'นอกสังกัด (รพ.สต.)',v:7162113.87,cat:'รพ.สต.'},
+];
+const apItems = [
+  {n:'ยา',v:1859839.41,cat:'ยา'},{n:'วัสดุการแพทย์',v:692975.28,cat:'lab+วัสดุ'},
+  {n:'วัสดุวิทยาศาสตร์',v:720895.50,cat:'lab+วัสดุ'},{n:'วัสดุอื่น',v:333504.20,cat:'เจ้าหนี้อื่น'},
+  {n:'เจ้าหนี้อื่น',v:321213.00,cat:'เจ้าหนี้อื่น'},{n:'ครุภัณฑ์',v:506197.00,cat:'เจ้าหนี้อื่น'},
+  {n:'ค่าสาธารณูปโภค',v:237823.74,cat:'เจ้าหนี้อื่น'},{n:'ค่าตอบแทน',v:789373.75,cat:'ค่าตอบแทน'},
+  {n:'ค่ารักษาตามจ่าย นค.1',v:1184184.00,cat:'นค.1'},{n:'ภาษีหัก ณ ที่จ่าย',v:22595.83,cat:'เงินรับฝาก'},
+  {n:'เงินมัดจำประกันสัญญา',v:300576.00,cat:'เงินรับฝาก'},{n:'เงินรับฝาก UC IP',v:479214.05,cat:'รพ.สต.'},
+];
+
+const FCOL = {
+  blue:'#3b82f6', mint:'#10b981', purple:'#8b5cf6',
+  orange:'#f97316', rose:'#ef4444',
+  grid:'rgba(59,130,246,0.08)', muted:'#64748b'
+};
+const FGR = {color: FCOL.grid};
+
+// Alert
+const latestNet = netFund[4];
+const alertEl = document.getElementById('finAlertBanner');
+if(alertEl){
+  if(latestNet < 0){
+    alertEl.innerHTML = `<div class="fin-alert danger">⚠️ เงินบำรุงสุทธิ ปี 69 <strong>${latestNet.toLocaleString('th',{minimumFractionDigits:2})} บาท</strong> — ติดลบ ต้องเฝ้าระวังสภาพคล่อง</div>`;
+  } else if(casRatio[4] < 1.5){
+    alertEl.innerHTML = `<div class="fin-alert warning">⚠️ Cash Ratio ${casRatio[4]} — ต่ำกว่าเกณฑ์ 1.5</div>`;
+  }
+}
+
+// KPI
+const finPct = (a,b)=>{ const p=((b-a)/a*100); return p>=0?`<span class="up">▲ +${p.toFixed(1)}%</span>`:`<span class="down">▼ ${p.toFixed(1)}%</span>`; };
+const kpiEl = document.getElementById('finKpiRow');
+if(kpiEl) kpiEl.innerHTML = FYR.map((yr,i)=>`
+  <div class="fin-kpi" style="--stripe:${['#93c5fd','#6ee7b7','#c4b5fd','#fdba74','#fca5a5'][i]}">
+    <style>.fin-kpi:nth-child(${i+1})::before{background:${['#93c5fd','#6ee7b7','#c4b5fd','#fdba74','#fca5a5'][i]};}</style>
+    <div class="fin-kpi-label">${yr}</div>
+    <div class="fin-kpi-val ${fund[i]>=0?'num-pos':'num-neg'}">${(fund[i]/1e6).toFixed(2)}</div>
+    <div class="fin-kpi-unit">ล้านบาท</div>
+    <div class="fin-kpi-note">${i>0?finPct(fund[i-1],fund[i]):'<span class="neutral">◆ ฐาน</span>'}</div>
+  </div>`).join('');
+
+// Fund vs Debt
+if(document.getElementById('finFundBar')) new Chart(document.getElementById('finFundBar'),{
+  type:'bar', data:{labels:FYR,datasets:[
+    {label:'เงินบำรุงคงเหลือ',data:fund.map(v=>+(v/1e6).toFixed(2)),backgroundColor:'rgba(147,197,253,.8)',borderRadius:5},
+    {label:'ภาระหนี้สิน',data:debt.map(v=>+(v/1e6).toFixed(2)),backgroundColor:'rgba(252,165,165,.8)',borderRadius:5},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:14,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน`}}},
+    scales:{x:{grid:FGR},y:{grid:FGR,ticks:{callback:v=>v+'M'}}}}
+});
+
+// Net line
+if(document.getElementById('finNetLine')) new Chart(document.getElementById('finNetLine'),{
+  type:'line', data:{labels:FYR,datasets:[
+    {label:'เงินบำรุงสุทธิ',data:netFund.map(v=>+(v/1e6).toFixed(2)),
+      segment:{borderColor:ctx=>ctx.p1.parsed.y>=0?FCOL.mint:FCOL.rose},
+      borderColor:FCOL.mint,backgroundColor:'rgba(16,185,129,.1)',
+      borderWidth:2.5,pointRadius:5,
+      pointBackgroundColor:netFund.map(v=>v>=0?FCOL.mint:FCOL.rose),
+      pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.3,fill:true},
+    {label:'เส้นศูนย์',data:FYR.map(()=>0),borderColor:'rgba(239,68,68,.3)',
+      borderWidth:1,borderDash:[5,5],pointRadius:0,fill:false},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:14,font:{size:11}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน`}}},
+    scales:{x:{grid:FGR},y:{grid:FGR,ticks:{callback:v=>v+'M'}}}}
+});
+
+// Ratio Cards
+const ratioData = [
+  {label:'Current Ratio',vals:curRatio,color:FCOL.blue,bench:2.0},
+  {label:'Quick Ratio',  vals:quiRatio,color:FCOL.mint,bench:1.5},
+  {label:'Cash Ratio',   vals:casRatio,color:FCOL.purple,bench:1.5},
+  {label:'NWC (ล้าน)',   vals:nwcArr.map(v=>+(v/1e6).toFixed(2)),color:FCOL.orange,bench:5},
+];
+const rcEl = document.getElementById('finRatioCards');
+if(rcEl) rcEl.innerHTML = ratioData.map(r=>{
+  const latest=r.vals[r.vals.length-1], ok=latest>=r.bench, maxV=Math.max(...r.vals);
+  const bars=r.vals.map((v,bi)=>`<div style="height:${Math.max(4,(v/maxV)*34)}px;width:16px;background:${bi===r.vals.length-1?r.color:'#e2e8f0'};border-radius:3px 3px 0 0"></div>`).join('');
+  return `<div class="ratio-card">
+    <div style="font-size:10px;color:#64748b;font-family:'DM Mono',monospace;letter-spacing:1px">${r.label}</div>
+    <div class="ratio-val" style="color:${ok?r.color:FCOL.rose}">${typeof latest==='number'?latest.toFixed(2):'-'}</div>
+    <div style="font-size:11px;color:${ok?FCOL.mint:FCOL.rose}">${ok?'✓ ผ่านเกณฑ์':'⚠ ต่ำกว่าเกณฑ์ '+r.bench}</div>
+    <div class="ratio-bars">${bars}</div>
+  </div>`;
+}).join('');
+
+// Ratio line
+if(document.getElementById('finRatioLine')) new Chart(document.getElementById('finRatioLine'),{
+  type:'line', data:{labels:FYR,datasets:[
+    {label:'Current Ratio',data:curRatio,borderColor:FCOL.blue,backgroundColor:'transparent',borderWidth:2.5,pointRadius:4,pointBackgroundColor:FCOL.blue,pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.35,fill:false},
+    {label:'Quick Ratio', data:quiRatio,borderColor:FCOL.mint,backgroundColor:'transparent',borderWidth:2.5,pointRadius:4,pointBackgroundColor:FCOL.mint,pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.35,fill:false},
+    {label:'Cash Ratio',  data:casRatio,borderColor:FCOL.purple,backgroundColor:'transparent',borderWidth:2.5,pointRadius:4,pointBackgroundColor:FCOL.purple,pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.35,fill:false},
+    {label:'เกณฑ์ 1.5',  data:FYR.map(()=>1.5),borderColor:'rgba(239,68,68,.3)',borderWidth:1,borderDash:[5,5],pointRadius:0,fill:false},
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'top',labels:{boxWidth:10,padding:12,font:{size:10}}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)}`}}},
+    scales:{x:{grid:FGR},y:{grid:FGR,min:0}}}
+});
+
+// NWC bar
+if(document.getElementById('finNwcBar')) new Chart(document.getElementById('finNwcBar'),{
+  type:'bar', data:{labels:FYR,datasets:[{
+    label:'NWC',data:nwcArr.map(v=>+(v/1e6).toFixed(2)),
+    backgroundColor:nwcArr.map(v=>v>=0?'rgba(147,197,253,.8)':'rgba(252,165,165,.8)'),borderRadius:6
+  }]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` NWC: ${c.parsed.y.toFixed(2)} ล้าน`}}},
+    scales:{x:{grid:FGR},y:{grid:FGR,ticks:{callback:v=>v+'M'}}}}
+});
+
+// AR trend
+if(document.getElementById('finArTrend')) new Chart(document.getElementById('finArTrend'),{
+  type:'line', data:{labels:FYR,datasets:[{
+    label:'ลูกหนี้สะสม',data:arTotal.map(v=>+(v/1e6).toFixed(2)),
+    borderColor:FCOL.rose,backgroundColor:'rgba(239,68,68,.1)',
+    borderWidth:2.5,pointRadius:5,pointBackgroundColor:FCOL.rose,
+    pointBorderColor:'#fff',pointBorderWidth:1.5,tension:.35,fill:true,
+  }]},
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y.toFixed(2)} ล้าน`}}},
+    scales:{x:{grid:FGR},y:{grid:FGR,ticks:{callback:v=>v+'M'}}}}
+});
+
+// AR donut
+const arByCat={};
+arItems.forEach(it=>{arByCat[it.cat]=(arByCat[it.cat]||0)+it.v;});
+if(document.getElementById('finArDonut')) new Chart(document.getElementById('finArDonut'),{
+  type:'doughnut', data:{labels:Object.keys(arByCat),
+    datasets:[{data:Object.values(arByCat).map(v=>+(v/1e6).toFixed(2)),
+      backgroundColor:['#93c5fd','#6ee7b7','#c4b5fd','#fdba74','#fca5a5'],
+      borderColor:'#fff',borderWidth:3,hoverOffset:6}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'60%',
+    plugins:{legend:{position:'bottom',labels:{boxWidth:10,padding:12,font:{size:10}}},
+      tooltip:{callbacks:{label:c=>{const t=Object.values(arByCat).reduce((a,b)=>a+b,0)/1e6;return ` ${c.label}: ${c.parsed.toFixed(2)} ล้าน (${(c.parsed/t*100).toFixed(1)})%`;}}}}}
+});
+
+// AR h-bar
+const arSorted=[...arItems].filter(i=>i.v>0).sort((a,b)=>b.v-a.v);
+if(document.getElementById('finArBar')) new Chart(document.getElementById('finArBar'),{
+  type:'bar', data:{labels:arSorted.map(i=>i.n),
+    datasets:[{label:'ลูกหนี้',data:arSorted.map(i=>+(i.v/1e6).toFixed(3)),backgroundColor:'rgba(147,197,253,.85)',borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${Number((c.parsed.x*1e6).toFixed(0)).toLocaleString('th')} บาท`}}},
+    scales:{x:{grid:FGR,ticks:{callback:v=>v.toFixed(2)+'M'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+
+// AP h-bar
+const apSorted=[...apItems].filter(i=>i.v>0).sort((a,b)=>b.v-a.v);
+if(document.getElementById('finApBar')) new Chart(document.getElementById('finApBar'),{
+  type:'bar', data:{labels:apSorted.map(i=>i.n),
+    datasets:[{label:'เจ้าหนี้',data:apSorted.map(i=>+(i.v/1e6).toFixed(3)),backgroundColor:'rgba(252,165,165,.85)',borderRadius:4}]},
+  options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${Number((c.parsed.x*1e6).toFixed(0)).toLocaleString('th')} บาท`}}},
+    scales:{x:{grid:FGR,ticks:{callback:v=>v.toFixed(2)+'M'}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+});
+
+// Summary table
+const finRows=[
+  {label:'เงินบำรุงคงเหลือ',vals:fund,signed:false},
+  {label:'ภาระหนี้สิน',vals:debt,signed:false},
+  {label:'เงินบำรุงสุทธิ',vals:netFund,signed:true},
+  {label:'Current Ratio',vals:curRatio,ratio:true},
+  {label:'Quick Ratio',vals:quiRatio,ratio:true},
+  {label:'Cash Ratio',vals:casRatio,ratio:true},
+  {label:'Networking Capital',vals:nwcArr,signed:true},
+  {label:'ลูกหนี้สะสม',vals:arTotal,signed:false},
+];
+const ftEl=document.getElementById('finSummaryTbl');
+if(ftEl) ftEl.innerHTML=
+  `<thead><tr><th>รายการ</th>${FYR.map(y=>`<th>${y}</th>`).join('')}</tr></thead><tbody>`+
+  finRows.map(r=>`<tr><td>${r.label}</td>${r.vals.map(v=>{
+    const cls=r.signed?(v>=0?'num-pos':'num-neg'):'';
+    const txt=r.ratio?v.toFixed(2):(v/1e6).toFixed(2)+' M';
+    return `<td class="${cls}">${txt}</td>`;
+  }).join('')}</tr>`).join('')+`</tbody>`;
+
+}); // end window.onload
+
+// ════════════════════════════════════════
+//  FVI TREND — 3 SEPARATE BOXES (expense tab)
+// ════════════════════════════════════════
+(function(){
+  const FVI_YR = ['ปี 65','ปี 66','ปี 67','ปี 68'];
+  const FVI_COL = ['rgba(216,200,248,0.85)','rgba(189,228,247,0.85)','rgba(180,237,218,0.85)','rgba(250,212,176,1)'];
+  const EG = {color:'rgba(180,160,240,0.12)'};
+
+  // helper: bar chart per type
+  function mkTrend(id, typeKey, color, fillColor){
+    const el = document.getElementById(id); if(!el) return;
+    const byYr = [0,1,2,3].map(yi => noInvest.filter(i=>i.type===typeKey).reduce((s,i)=>s+(i.v[yi]||0),0)/1e6);
+    new Chart(el,{
+      type:'bar',
+      data:{labels:FVI_YR,datasets:[
+        {label:typeKey, data:byYr.map(v=>+v.toFixed(2)),
+          backgroundColor:byYr.map((_,bi)=>bi===3?fillColor:fillColor.replace(/[\d.]+\)$/,'0.45)')),
+          borderRadius:6},
+        {type:'line', label:'แนวโน้ม', data:byYr.map(v=>+v.toFixed(2)),
+          borderColor:color, backgroundColor:'transparent',
+          borderWidth:2, pointRadius:4, pointBackgroundColor:color,
+          pointBorderColor:'#fff', pointBorderWidth:1.5, tension:.35, fill:false},
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(2)} ล้าน`}}},
+        scales:{x:{grid:EG,ticks:{font:{size:9}}},y:{grid:EG,ticks:{callback:v=>v+'M',font:{size:9}}}}}
+    });
+  }
+
+  // helper: horizontal grouped bar — top N items × 4 ปี
+  function mkTopHBar(id, typeKey){
+    const el = document.getElementById(id); if(!el) return;
+    const topItems = noInvest.filter(i=>i.type===typeKey)
+      .sort((a,b)=>(b.v[3]||0)-(a.v[3]||0)).slice(0,5);
+    new Chart(el,{
+      type:'bar',
+      data:{
+        labels: topItems.map(i=>i.n),
+        datasets: [0,1,2,3].map((yi,di)=>({
+          label: FVI_YR[yi],
+          data: topItems.map(i=>+((i.v[yi]||0)/1e6).toFixed(2)),
+          backgroundColor: FVI_COL[di],
+          borderRadius: 3,
+        }))
+      },
+      options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+        plugins:{legend:{position:'top',labels:{boxWidth:10,padding:10,font:{size:10}}},
+          tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${Number((c.parsed.x*1e6).toFixed(0)).toLocaleString('th')} บาท`}}},
+        scales:{
+          x:{grid:EG,ticks:{callback:v=>v.toFixed(1)+'M',font:{size:9}}},
+          y:{grid:{display:false},ticks:{font:{size:10}}}
+        }}
+    });
+  }
+
+  requestAnimationFrame(()=>{
+    mkTrend('fviFixTrend',  'fixed',        '#9b7ee0', 'rgba(200,184,248,0.75)');
+    mkTrend('fviVarTrend',  'variable',     '#34b87a', 'rgba(164,228,196,0.75)');
+    mkTrend('fviIntTrend',  'intermittent', '#e8872a', 'rgba(250,200,150,0.75)');
+    mkTopHBar('topFixHBar', 'fixed');
+    mkTopHBar('topVarHBar', 'variable');
+    mkTopHBar('topIntHBar', 'intermittent');
+  });
+})();
+
+// ════════════════════════════════════════
+//  TAB SWITCHING
+// ════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
